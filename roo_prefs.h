@@ -11,10 +11,10 @@ namespace roo_prefs {
 
 // Basic usage:
 //
-// Collection c("col-name");  // Statically declared.
+// roo_prefs::Collection c("col-name");  // Statically declared.
 //
 // {
-//   Transaction t(c);
+//   roo_prefs::Transaction t(c);
 //   t.store().putInt("pref-name", val);
 // }
 //
@@ -29,13 +29,13 @@ namespace roo_prefs {
 // words, this works, and only calls the begin()/end() pair once:
 //
 // void foo(const string& key, int val) {
-//   Transaction t(c);
+//   roo_prefs::Transaction t(c);
 //   t.putInt(key, val);
 // }
 //
 // // ...
 // {
-//   Transaction t(c);
+//   roo_prefs::Transaction t(c);
 //   foo("a", 1);
 //   foo("b", 2);
 // }
@@ -176,8 +176,9 @@ inline WriteResult StoreWrite<double>(Preferences& prefs, const char* key,
 
 template <>
 inline WriteResult StoreWrite<std::string>(Preferences& prefs, const char* key,
-                                      const std::string& val) {
-  return (prefs.putBytes(key, val.data(), val.size()) > 0) ? WRITE_OK : WRITE_ERROR;
+                                           const std::string& val) {
+  return (prefs.putBytes(key, val.data(), val.size()) > 0) ? WRITE_OK
+                                                           : WRITE_ERROR;
 }
 
 template <typename T>
@@ -329,6 +330,43 @@ inline ReadResult StoreRead<std::string>(Preferences& prefs, const char* key,
   return READ_ERROR;
 }
 
+// Persistent preference of a specific type.
+// The preference will store its value in the preferences collection provided in
+// the constructor, under the specified key (which needs to remain constant).
+// The value is read lazily (on first access.) You can provide default value to
+// be used if the collection does not contain the specified key. The value is
+// cached in memory - subsequent reads will return the cached value. Writes
+// always write to the persistent storage (and also, update the cache.) Read and
+// write are performed within implicitly created transactions. If you have
+// multiple properties that you want to read/write at the same time, you can
+// read them under an explicit transaction:
+//
+// roo_prefs::Collection col("foo");
+// roo_prefs::Int16 pref1(col, "pref1");
+// roo_prefs::String pref2(col, "pref2");
+// int16_t a;
+// std::string b;
+// {
+//   Transaction t(collection);
+//   a = pref1.get();
+//   b = pref2.get();
+// }
+//
+// For simple types, use  aliases defined later in the file (Uint8, String,
+// etc.)
+//
+// You can persist arbitrary types (e.g. struct types). Types other than simple
+// types and std::string are persisted as BLOBs, containing the binary
+// representation of the object.
+//
+// NOTE:
+// * Preferences library is generally intended for storing small values.
+// * If the definition (and thus the internal representation) of your complex
+//   type changes, any persisted values of that type will become unreadable or
+//   corrupted.
+// For these reasons, it is generally not a good practice to persist large objects
+// using this template.
+//
 template <typename T>
 class Pref {
  public:
