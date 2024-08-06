@@ -1,0 +1,26 @@
+{
+    "name": "roo_prefs",
+    "description": "ESP32 'Preferences' utility library for management of persistent settings, avoiding name clashes by using namespaces and transactions.",
+    "keywords": "preferences peristent options",
+    "authors": [
+        {
+            "name": "Dejwk",
+            "email": "dejwk.oss@gmail.com",
+            "maintainer": true
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dejwk/roo_prefs"
+    },
+    "version": "1.0.0",
+    "homepage": "https://github.com/dejwk/roo_prefs",
+    "frameworks": [
+        "Arduino",
+        "*"
+    ],
+    "build": {
+        "srcDir": "src",
+        "srcFilter": "+<*> -<examples> -<test>"
+    }
+}
