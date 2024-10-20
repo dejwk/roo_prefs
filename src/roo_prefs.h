@@ -1,5 +1,7 @@
 #pragma once
 
+#include "roo_logging.h"
+
 #include <inttypes.h>
 
 #include <functional>
@@ -54,7 +56,10 @@ class Collection {
 
   bool inc(bool read_only) {
     if (refcount_ == 0) {
-      if (!prefs_.begin(name_, read_only)) return false;
+      if (!prefs_.begin(name_, read_only)) {
+        LOG(ERROR) << "Failed to initialize preferences " << name_;
+        return false;
+      }
       read_only_ = read_only;
       ++refcount_;
       return true;
@@ -190,6 +195,7 @@ inline ReadResult StoreRead(Preferences& prefs, const char* key, T& val) {
     if (prefs.getBytes(key, &val, sizeof(val)) == sizeof(val)) {
       return READ_OK;
     } else {
+      LOG(ERROR) << "Failed to read prefs key " << key;
       return READ_ERROR;
     }
   }
@@ -327,6 +333,7 @@ inline ReadResult StoreRead<std::string>(Preferences& prefs, const char* key,
   if (prefs.getBytes(key, &*val.begin(), val.size()) == val.size()) {
     return READ_OK;
   }
+  LOG(ERROR) << "Failed to read prefs key " << key;
   return READ_ERROR;
 }
 
