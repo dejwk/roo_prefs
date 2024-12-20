@@ -445,6 +445,7 @@ class Pref {
       Transaction t(collection_, true);
       if (!t.active()) {
         state_ = UNSET;
+        value_ = default_value_;
         return;
       }
       switch (StoreRead(t.store(), key_, value_)) {
