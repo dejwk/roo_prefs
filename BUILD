@@ -3,7 +3,6 @@ cc_library(
     visibility = ["//visibility:public"],
     srcs = glob(
         [
-            "src/**/*.cpp",
             "src/**/*.h",
         ],
         exclude = ["test/**"],
@@ -11,4 +10,7 @@ cc_library(
     includes = [
         "src",
     ],
+    deps = [
+        "//roo_testing/frameworks/arduino-esp32-2.0.4/libraries/Preferences",
+    ]
 )
