@@ -45,8 +45,6 @@ namespace roo_prefs {
 
 class Transaction;
 
-enum PrefState { UNKNOWN, UNSET, SET, ERROR };
-
 enum ReadResult { READ_OK, READ_NOT_FOUND, READ_WRONG_TYPE, READ_ERROR };
 enum WriteResult { WRITE_OK, WRITE_ERROR };
 enum ClearResult { CLEAR_OK, CLEAR_ERROR };
@@ -663,6 +661,8 @@ class Pref {
   }
 
  private:
+  enum PrefState { UNKNOWN, UNSET, SET, ERROR };
+
   void sync() const {
     if (state_ == UNKNOWN || state_ == ERROR) {
       Transaction t(collection_, true);
