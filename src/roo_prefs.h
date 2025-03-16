@@ -3,9 +3,11 @@
 #include <inttypes.h>
 
 #include <functional>
+#include <memory>
 #include <string>
 
 #include "Preferences.h"
+#include "roo_backport.h"
 #include "roo_logging.h"
 
 namespace roo_prefs {
@@ -16,7 +18,7 @@ namespace roo_prefs {
 //
 // {
 //   roo_prefs::Transaction t(c);
-//   t.store().putInt("pref-name", val);
+//   t.store().writeI32("pref-name", val);
 // }
 //
 // In the snippet above, Preferences::begin()/end() will be called automatically
@@ -31,7 +33,7 @@ namespace roo_prefs {
 //
 // void foo(const string& key, int val) {
 //   roo_prefs::Transaction t(c);
-//   t.putInt(key, val);
+//   t.writeI32(key, val);
 // }
 //
 // // ...
@@ -43,7 +45,295 @@ namespace roo_prefs {
 
 class Transaction;
 
-using Store = Preferences;
+enum PrefState { UNKNOWN, UNSET, SET, ERROR };
+
+enum ReadResult { READ_OK, READ_NOT_FOUND, READ_WRONG_TYPE, READ_ERROR };
+enum WriteResult { WRITE_OK, WRITE_ERROR };
+enum ClearResult { CLEAR_OK, CLEAR_ERROR };
+
+class PreferencesStore {
+ public:
+  bool begin(const char* collection_name, bool read_only) {
+    return prefs_.begin(collection_name, read_only);
+  }
+
+  void end() { prefs_.end(); }
+
+  bool isKey(const char* key) { return prefs_.isKey(key); }
+
+  ClearResult clear(const char* key) {
+    return prefs_.remove(key) ? CLEAR_OK : CLEAR_ERROR;
+  }
+
+  template <typename T>
+  WriteResult writeObject(const char* key, const T& val) {
+    return (prefs_.putBytes(key, &val, sizeof(val)) > 0) ? WRITE_OK
+                                                         : WRITE_ERROR;
+  }
+
+  WriteResult writeBool(const char* key, bool val) {
+    return (prefs_.putBool(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeU8(const char* key, uint8_t val) {
+    return (prefs_.putUChar(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeI8(const char* key, int8_t val) {
+    return (prefs_.putChar(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeU16(const char* key, uint16_t val) {
+    return (prefs_.putUShort(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  inline WriteResult writeI16(const char* key, int16_t val) {
+    return (prefs_.putShort(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeU32(const char* key, uint32_t val) {
+    return (prefs_.putULong(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeI32(const char* key, int32_t val) {
+    return (prefs_.putLong(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeU64(const char* key, uint64_t val) {
+    return (prefs_.putULong64(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeI64(const char* key, int64_t val) {
+    return (prefs_.putLong64(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeFloat(const char* key, float val) {
+    return (prefs_.putFloat(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  WriteResult writeDouble(const char* key, double val) {
+    return (prefs_.putDouble(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  }
+
+  inline WriteResult writeString(const char* key, roo::string_view val) {
+    return (prefs_.putBytes(key, val.data(), val.size()) > 0) ? WRITE_OK
+                                                              : WRITE_ERROR;
+  }
+
+  template <typename T>
+  inline ReadResult readObject(const char* key, T& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_BLOB) return READ_WRONG_TYPE;
+    if (prefs_.getBytesLength(key) != sizeof(val)) {
+      return READ_WRONG_TYPE;
+    }
+    if (prefs_.getBytes(key, &val, sizeof(val)) != sizeof(val)) {
+      return READ_ERROR;
+    }
+    return READ_OK;
+  }
+
+  ReadResult readBool(const char* key, bool& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_U8) return READ_WRONG_TYPE;
+    bool v1 = prefs_.getBool(key, false);
+    bool v2 = prefs_.getBool(key, true);
+    if (v1 != v2) {
+      return READ_ERROR;
+    } else {
+      val = v1;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readU8(const char* key, uint8_t& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_U8) return READ_WRONG_TYPE;
+    constexpr uint8_t magic = 0xDF;
+    uint8_t result = prefs_.getUChar(key, magic);
+    if (result == magic) {
+      constexpr uint8_t magic2 = 0x12;
+      if (prefs_.getUChar(key, magic2) != result) return READ_ERROR;
+    }
+    val = result;
+    return READ_OK;
+  }
+
+  ReadResult readI8(const char* key, int8_t& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_I8) return READ_WRONG_TYPE;
+    constexpr int8_t magic = 0xDF;
+    int8_t result = prefs_.getChar(key, magic);
+    if (result == magic) {
+      constexpr int8_t magic2 = 0x12;
+      if (prefs_.getChar(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readU16(const char* key, uint16_t& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_U16) return READ_WRONG_TYPE;
+    constexpr uint16_t magic = 0xDFB1;
+    uint16_t result = prefs_.getUShort(key, magic);
+    if (result == magic) {
+      constexpr uint16_t magic2 = 0x1223;
+      if (prefs_.getUShort(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readI16(const char* key, int16_t& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_I16) return READ_WRONG_TYPE;
+    constexpr int16_t magic = 0xDFB1;
+    int16_t result = prefs_.getShort(key, magic);
+    if (result == magic) {
+      constexpr int16_t magic2 = 0x1223;
+      if (prefs_.getShort(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readU32(const char* key, uint32_t& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_U32) return READ_WRONG_TYPE;
+    constexpr uint32_t magic = 0xDFB1BEEF;
+    uint32_t result = prefs_.getULong(key, magic);
+    if (result == magic) {
+      constexpr uint32_t magic2 = 0x12345678;
+      if (prefs_.getULong(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readI32(const char* key, int32_t& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_I32) return READ_WRONG_TYPE;
+    constexpr int32_t magic = 0xDFB1BEEF;
+    int32_t result = prefs_.getLong(key, magic);
+    if (result == magic) {
+      constexpr int32_t magic2 = 0x12345678;
+      if (prefs_.getLong(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readU64(const char* key, uint64_t& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_U64) return READ_WRONG_TYPE;
+    constexpr uint64_t magic = 0x3E3E1254DFB1BEEFLL;
+    uint64_t result = prefs_.getULong64(key, magic);
+    if (result == magic) {
+      constexpr uint64_t magic2 = 0x1234567812345678LL;
+      if (prefs_.getULong64(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readI64(const char* key, int64_t& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_I64) return READ_WRONG_TYPE;
+    constexpr int64_t magic = 0x3E3E1254DFB1BEEF;
+    int64_t result = prefs_.getLong64(key, magic);
+    if (result == magic) {
+      constexpr int64_t magic2 = 0x1234567812345678LL;
+      if (prefs_.getLong64(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readFloat(const char* key, float& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_BLOB) return READ_WRONG_TYPE;
+    constexpr float magic = -0.123456;
+    float result = prefs_.getFloat(key, magic);
+    if (result == magic) {
+      constexpr float magic2 = 1.54e10;
+      if (prefs_.getFloat(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readDouble(const char* key, double& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_BLOB) return READ_WRONG_TYPE;
+    constexpr double magic = -0.123456;
+    double result = prefs_.getDouble(key, magic);
+    if (result == magic) {
+      constexpr double magic2 = 1.54e10;
+      if (prefs_.getDouble(key, magic2) != result) return READ_ERROR;
+    } else {
+      val = result;
+      return READ_OK;
+    }
+  }
+
+  ReadResult readString(const char* key, std::string& val) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_BLOB) return READ_WRONG_TYPE;
+    size_t size = prefs_.getBytesLength(key);
+    if (size == 0) {
+      val.clear();
+      return READ_OK;
+    }
+    auto buf = std::unique_ptr<char[]>(new char[size]);
+    if (prefs_.getBytes(key, &buf[0], size) == size) {
+      val = std::string(&buf[0], size);
+      return READ_OK;
+    }
+    return READ_ERROR;
+  }
+
+  ReadResult readBytes(const char* key, void* val, size_t max_len,
+                       size_t* out_len) {
+    PreferenceType type = prefs_.getType(key);
+    if (type == PT_INVALID) return READ_NOT_FOUND;
+    if (type != PT_BLOB) return READ_WRONG_TYPE;
+    size_t size = prefs_.getBytesLength(key);
+    if (out_len != nullptr) *out_len = size;
+    if (size == 0) return READ_OK;
+    if (size > max_len) return READ_ERROR;
+    if (prefs_.getBytes(key, val, size) == size) {
+      return READ_OK;
+    }
+    return READ_ERROR;
+  }
+
+ private:
+  Preferences prefs_;
+};
+
+using Store = PreferencesStore;
 
 // Collection corresponds to a preferences namespace. Use it to group related
 // preferences.
@@ -110,246 +400,165 @@ class Transaction {
   bool active_;
 };
 
-enum PrefState { UNKNOWN, UNSET, SET, ERROR };
-
-enum ReadResult { READ_OK, READ_OK_UNSET, READ_ERROR };
-enum WriteResult { WRITE_OK, WRITE_ERROR };
-enum ClearResult { CLEAR_OK, CLEAR_ERROR };
+namespace internal {
 
 inline ClearResult StoreClear(Store& store, const char* key) {
-  return store.remove(key) ? CLEAR_OK : CLEAR_ERROR;
+  return store.clear(key);
 }
 
 template <typename T>
 inline WriteResult StoreWrite(Store& store, const char* key, const T& val) {
-  return (store.putBytes(key, &val, sizeof(val)) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeObject(key, val);
+}
+
+template <>
+inline WriteResult StoreWrite<bool>(Store& store, const char* key,
+                                    const bool& val) {
+  return store.writeBool(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<uint8_t>(Store& store, const char* key,
                                        const uint8_t& val) {
-  return (store.putUChar(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeU8(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<int8_t>(Store& store, const char* key,
                                       const int8_t& val) {
-  return (store.putChar(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeI8(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<uint16_t>(Store& store, const char* key,
                                         const uint16_t& val) {
-  return (store.putUShort(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeU16(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<int16_t>(Store& store, const char* key,
                                        const int16_t& val) {
-  return (store.putShort(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeI16(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<uint32_t>(Store& store, const char* key,
                                         const uint32_t& val) {
-  return (store.putULong(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeU32(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<int32_t>(Store& store, const char* key,
                                        const int32_t& val) {
-  return (store.putLong(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeI32(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<uint64_t>(Store& store, const char* key,
                                         const uint64_t& val) {
-  return (store.putULong64(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeU64(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<int64_t>(Store& store, const char* key,
                                        const int64_t& val) {
-  return (store.putLong64(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeI64(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<float>(Store& store, const char* key,
                                      const float& val) {
-  return (store.putFloat(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeFloat(key, val);
 }
 
 template <>
 inline WriteResult StoreWrite<double>(Store& store, const char* key,
                                       const double& val) {
-  return (store.putDouble(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
+  return store.writeDouble(key, val);
 }
 
 template <>
-inline WriteResult StoreWrite<std::string>(Store& store, const char* key,
-                                           const std::string& val) {
-  return (store.putBytes(key, val.data(), val.size()) > 0) ? WRITE_OK
-                                                           : WRITE_ERROR;
+inline WriteResult StoreWrite<roo::string_view>(Store& store, const char* key,
+                                                const roo::string_view& val) {
+  return store.writeString(key, val);
 }
 
 template <typename T>
 inline ReadResult StoreRead(Store& store, const char* key, T& val) {
-  if (store.getType(key) != PT_BLOB ||
-      store.getBytesLength(key) != sizeof(val)) {
-    return READ_OK_UNSET;
-  } else {
-    if (store.getBytes(key, &val, sizeof(val)) == sizeof(val)) {
-      return READ_OK;
-    } else {
-      LOG(ERROR) << "Failed to read prefs key " << key;
-      return READ_ERROR;
-    }
-  }
+  return store.readObject(key, val);
+}
+
+template <>
+inline ReadResult StoreRead<bool>(Store& store, const char* key, bool& val) {
+  return store.readBool(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<uint8_t>(Store& store, const char* key,
                                      uint8_t& val) {
-  if (store.getType(key) != PT_U8) return READ_OK_UNSET;
-  constexpr uint8_t magic = 0xDF;
-  val = store.getUChar(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readU8(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<int8_t>(Store& store, const char* key,
                                     int8_t& val) {
-  if (store.getType(key) != PT_I8) return READ_OK_UNSET;
-  constexpr int8_t magic = 0xDF;
-  val = store.getChar(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readI8(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<uint16_t>(Store& store, const char* key,
                                       uint16_t& val) {
-  if (store.getType(key) != PT_U16) return READ_OK_UNSET;
-  constexpr uint16_t magic = 0xDFB1;
-  val = store.getUShort(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readU16(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<int16_t>(Store& store, const char* key,
                                      int16_t& val) {
-  if (store.getType(key) != PT_I16) return READ_OK_UNSET;
-  constexpr int16_t magic = 0xDFB1;
-  val = store.getShort(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readI16(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<uint32_t>(Store& store, const char* key,
                                       uint32_t& val) {
-  if (store.getType(key) != PT_U32) return READ_OK_UNSET;
-  constexpr uint32_t magic = 0xDFB1BEEF;
-  val = store.getULong(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readU32(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<int32_t>(Store& store, const char* key,
                                      int32_t& val) {
-  if (store.getType(key) != PT_I32) return READ_OK_UNSET;
-  constexpr int32_t magic = 0xDFB1BEEF;
-  val = store.getLong(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readI32(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<uint64_t>(Store& store, const char* key,
                                       uint64_t& val) {
-  if (store.getType(key) != PT_U64) return READ_OK_UNSET;
-  constexpr uint64_t magic = 0x3E3E1254DFB1BEEF;
-  val = store.getULong64(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readU64(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<int64_t>(Store& store, const char* key,
                                      int64_t& val) {
-  if (store.getType(key) != PT_I64) return READ_OK_UNSET;
-  constexpr int64_t magic = 0x3E3E1254DFB1BEEF;
-  val = store.getLong64(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readI64(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<float>(Store& store, const char* key, float& val) {
-  constexpr float magic = -0.123456;
-  val = store.getFloat(key, magic);
-  if (val == magic && store.getType(key) != PT_BLOB) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readFloat(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<double>(Store& store, const char* key,
                                     double& val) {
-  if (store.getType(key) != PT_BLOB) return READ_OK_UNSET;
-  constexpr double magic = -0.123456;
-  val = store.getDouble(key, magic);
-  if (val == magic) {
-    return READ_OK_UNSET;
-  } else {
-    return READ_OK;
-  }
+  return store.readDouble(key, val);
 }
 
 template <>
 inline ReadResult StoreRead<std::string>(Store& store, const char* key,
                                          std::string& val) {
-  if (store.getType(key) != PT_BLOB) {
-    return READ_OK_UNSET;
-  }
-  size_t size = store.getBytesLength(key);
-  val.resize(size);
-  if (size == 0) return READ_OK;
-  if (store.getBytes(key, &*val.begin(), val.size()) == val.size()) {
-    return READ_OK;
-  }
-  LOG(ERROR) << "Failed to read prefs key " << key;
-  return READ_ERROR;
+  return store.readString(key, val);
 }
+
+}  // namespace internal
 
 // Persistent preference of a specific type.
 // The preference will store its value in the preferences collection provided in
@@ -418,7 +627,7 @@ class Pref {
       state_ = ERROR;
       return false;
     }
-    switch (StoreWrite(t.store(), key_, value)) {
+    switch (internal::StoreWrite(t.store(), key_, value)) {
       case WRITE_OK: {
         value_ = value;
         state_ = SET;
@@ -441,7 +650,7 @@ class Pref {
       state_ = ERROR;
       return false;
     }
-    switch (StoreClear(t.store(), key_)) {
+    switch (internal::StoreClear(t.store(), key_)) {
       case CLEAR_OK: {
         state_ = UNSET;
         return true;
@@ -462,12 +671,12 @@ class Pref {
         value_ = default_value_;
         return;
       }
-      switch (StoreRead(t.store(), key_, value_)) {
+      switch (internal::StoreRead(t.store(), key_, value_)) {
         case READ_OK: {
           state_ = SET;
           return;
         }
-        case READ_OK_UNSET: {
+        case READ_NOT_FOUND: {
           state_ = UNSET;
           value_ = default_value_;
           return;
@@ -487,6 +696,7 @@ class Pref {
   mutable T value_;
 };
 
+using Bool = Pref<bool>;
 using Uint8 = Pref<uint8_t>;
 using Int8 = Pref<int8_t>;
 using Uint16 = Pref<uint16_t>;
