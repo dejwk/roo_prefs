@@ -1,13 +1,12 @@
 #pragma once
 
-#include "roo_logging.h"
-
 #include <inttypes.h>
 
 #include <functional>
 #include <string>
 
 #include "Preferences.h"
+#include "roo_logging.h"
 
 namespace roo_prefs {
 
@@ -57,7 +56,13 @@ class Collection {
   bool inc(bool read_only) {
     if (refcount_ == 0) {
       if (!prefs_.begin(name_, read_only)) {
-        LOG(ERROR) << "Failed to initialize preferences " << name_;
+        if (read_only) {
+          LOG(WARNING) << "Failed to initialize preferences " << name_
+                     << " for reading";
+        } else {
+          LOG(ERROR) << "Failed to initialize preferences " << name_
+                     << " for writing";
+        }
         return false;
       }
       read_only_ = read_only;
@@ -371,8 +376,8 @@ inline ReadResult StoreRead<std::string>(Preferences& prefs, const char* key,
 // * If the definition (and thus the internal representation) of your complex
 //   type changes, any persisted values of that type will become unreadable or
 //   corrupted.
-// For these reasons, it is generally not a good practice to persist large objects
-// using this template.
+// For these reasons, it is generally not a good practice to persist large
+// objects using this template.
 //
 template <typename T>
 class Pref {
