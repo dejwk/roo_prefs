@@ -4,6 +4,7 @@ cc_library(
     srcs = glob(
         [
             "src/**/*.h",
+            "src/**/*.cpp",
         ],
         exclude = ["test/**"],
     ),
@@ -11,6 +12,7 @@ cc_library(
         "src",
     ],
     deps = [
+        "//lib/roo_backport",
         "//roo_testing/frameworks/arduino-esp32-2.0.4/libraries/Preferences",
     ]
 )
