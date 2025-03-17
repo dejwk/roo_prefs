@@ -27,7 +27,7 @@ class PreferencesStore {
 
   WriteResult writeU16(const char* key, uint16_t val);
 
-  inline WriteResult writeI16(const char* key, int16_t val);
+  WriteResult writeI16(const char* key, int16_t val);
 
   WriteResult writeU32(const char* key, uint32_t val);
 
@@ -44,7 +44,7 @@ class PreferencesStore {
   WriteResult writeString(const char* key, roo::string_view val);
 
   template <typename T>
-  inline ReadResult readObject(const char* key, T& val) {
+  ReadResult readObject(const char* key, T& val) {
     return readObjectInternal(key, &val, sizeof(val));
   }
 
