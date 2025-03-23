@@ -4,7 +4,9 @@
 
 #include <string>
 
+#include "roo_prefs/collection.h"
 #include "roo_prefs/status.h"
+#include "roo_prefs/transaction.h"
 
 namespace roo_prefs {
 
