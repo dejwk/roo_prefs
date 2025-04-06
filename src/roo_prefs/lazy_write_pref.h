@@ -106,7 +106,8 @@ void LazyWritePref<T>::maybeFlush() {
     }
   }
   // Reschedule the update.
-  flusher_.scheduleAfter(roo_time::Seconds(stable_write_latency_s_));
+  flusher_.scheduleAfter(roo_time::Seconds(stable_write_latency_s_),
+                         roo_scheduler::PRIORITY_BACKGROUND);
 }
 
 template <typename T>
