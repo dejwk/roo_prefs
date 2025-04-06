@@ -306,6 +306,7 @@ bool Pref<T>::clear() {
   switch (internal::StoreClear(t.store(), key_)) {
     case CLEAR_OK: {
       state_ = UNSET;
+      value_ = default_value_;
       return true;
     }
     default: {
