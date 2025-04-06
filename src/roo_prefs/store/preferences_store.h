@@ -43,6 +43,8 @@ class PreferencesStore {
 
   WriteResult writeString(const char* key, roo::string_view val);
 
+  WriteResult writeBytes(const char* key, const void* val, size_t len);
+
   template <typename T>
   ReadResult readObject(const char* key, T& val) {
     return readObjectInternal(key, &val, sizeof(val));
@@ -74,6 +76,8 @@ class PreferencesStore {
 
   ReadResult readBytes(const char* key, void* val, size_t max_len,
                        size_t* out_len);
+
+  ReadResult readBytesLength(const char* key, size_t* out_len);
 
  private:
   friend class Collection;

@@ -14,10 +14,15 @@ ClearResult PreferencesStore::clear(const char* key) {
   return prefs_.remove(key) ? CLEAR_OK : CLEAR_ERROR;
 }
 
+WriteResult PreferencesStore::writeBytes(const char* key, const void* val,
+                                         size_t len) {
+  return (prefs_.putBytes(key, val, len) > 0) ? WRITE_OK : WRITE_ERROR;
+}
+
 WriteResult PreferencesStore::writeObjectInternal(const char* key,
                                                   const void* val,
                                                   size_t size) {
-  return (prefs_.putBytes(key, val, size) > 0) ? WRITE_OK : WRITE_ERROR;
+  return writeBytes(key, val, size);
 }
 
 WriteResult PreferencesStore::writeBool(const char* key, bool val) {
@@ -267,6 +272,16 @@ ReadResult PreferencesStore::readBytes(const char* key, void* val,
     return READ_OK;
   }
   return READ_ERROR;
+}
+
+ReadResult PreferencesStore::readBytesLength(const char* key, size_t* out_len) {
+  PreferenceType type = prefs_.getType(key);
+  if (type == PT_INVALID) return READ_NOT_FOUND;
+  if (type != PT_BLOB) return READ_WRONG_TYPE;
+  size_t size = prefs_.getBytesLength(key);
+  if (size == 0) return READ_ERROR;
+  if (out_len != nullptr) *out_len = size;
+  return READ_OK;
 }
 
 }  // namespace roo_prefs
