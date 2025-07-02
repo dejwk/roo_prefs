@@ -171,6 +171,12 @@ inline WriteResult StoreWrite<roo::string_view>(Store& store, const char* key,
   return store.writeString(key, val);
 }
 
+template <>
+inline WriteResult StoreWrite<std::string>(Store& store, const char* key,
+                                           const std::string& val) {
+  return store.writeString(key, val);
+}
+
 template <typename T>
 inline ReadResult StoreRead(Store& store, const char* key, T& val) {
   return store.readObject(key, val);
