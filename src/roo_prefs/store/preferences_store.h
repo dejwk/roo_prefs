@@ -4,6 +4,8 @@
 
 #include "Preferences.h"
 #include "roo_backport.h"
+#include "roo_backport/string_view.h"
+
 #include "roo_prefs/status.h"
 
 namespace roo_prefs {
