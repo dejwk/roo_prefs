@@ -16,6 +16,8 @@ class Collection {
   Collection(const char* name)
       : store_(), name_(name), refcount_(0), read_only_(true) {}
 
+  bool inTransaction() const { return refcount_ > 0; }
+
  private:
   friend class Transaction;
 
