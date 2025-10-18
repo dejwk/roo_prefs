@@ -13,6 +13,7 @@ cc_library(
     ],
     deps = [
         "@roo_backport",
+        "@roo_logging",
         "@roo_testing//roo_testing/frameworks/arduino-esp32-2.0.4/libraries/Preferences",
     ]
 )
