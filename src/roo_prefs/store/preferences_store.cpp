@@ -41,7 +41,7 @@ WriteResult PreferencesStore::writeU16(const char* key, uint16_t val) {
   return (prefs_.putUShort(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
 }
 
-inline WriteResult PreferencesStore::writeI16(const char* key, int16_t val) {
+WriteResult PreferencesStore::writeI16(const char* key, int16_t val) {
   return (prefs_.putShort(key, val) > 0) ? WRITE_OK : WRITE_ERROR;
 }
 
