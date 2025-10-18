@@ -21,7 +21,8 @@ void StoreWiFiPassword(const std::string& password) {
   wifi_password.set(password);
 }
 
-// Fetch the stored preference. The value is cached in RAM, so the repetitive calls are cheap.
+// Fetch the stored preference. The value is cached in RAM, so the repetitive
+// calls are cheap.
 const std::string& GetWiFiPassword() {
   return wifi_password.get();
 }
