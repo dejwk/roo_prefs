@@ -27,7 +27,7 @@ namespace roo_prefs {
 // int16_t a;
 // std::string b;
 // {
-//   Transaction t(collection);
+//   Transaction t(col);
 //   a = pref1.get();
 //   b = pref2.get();
 // }
