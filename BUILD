@@ -1,6 +1,8 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 cc_library(
     name = "roo_prefs",
-    visibility = ["//visibility:public"],
     srcs = glob(
         [
             "src/**/*.h",
@@ -11,16 +13,18 @@ cc_library(
     includes = [
         "src",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "@roo_backport",
         "@roo_logging",
         "@roo_scheduler",
         "@roo_testing//roo_testing/frameworks/arduino-esp32-2.0.4/libraries/Preferences",
-    ]
+    ],
 )
 
 cc_test(
     name = "prefs_test",
+    size = "small",
     srcs = [
         "test/prefs_test.cpp",
     ],
@@ -31,11 +35,11 @@ cc_test(
         ":roo_prefs",
         "@roo_testing//:arduino_gtest_main",
     ],
-    size = "small",
 )
 
 cc_test(
     name = "lazy_write_pref_test",
+    size = "small",
     srcs = [
         "test/lazy_write_pref_test.cpp",
     ],
@@ -46,5 +50,4 @@ cc_test(
         ":roo_prefs",
         "@roo_testing//:arduino_gtest_main",
     ],
-    size = "small",
 )
