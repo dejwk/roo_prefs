@@ -1,10 +1,10 @@
 module(name = "roo_prefs", version = "1.2.7")
 
-bazel_dep(name = "roo_testing", version = "1.2.0")
+bazel_dep(name = "roo_testing", version = "1.2.1")
 bazel_dep(name = "googletest", version = "1.17.0")
 
-bazel_dep(name = "roo_backport", version = "1.2.0")
-bazel_dep(name = "roo_logging", version = "1.5.1")
+bazel_dep(name = "roo_backport", version = "1.2.1")
+bazel_dep(name = "roo_logging", version = "1.5.3")
 
 # Optional, for lazy-write prefs.
-bazel_dep(name = "roo_scheduler", version = "2.1.6")
+bazel_dep(name = "roo_scheduler", version = "2.1.7")
