@@ -13,7 +13,7 @@
         "type": "git",
         "url": "https://github.com/dejwk/roo_prefs"
     },
-    "version": "1.2.9",
+    "version": "1.2.10",
     "homepage": "https://github.com/dejwk/roo_prefs",
     "frameworks": [
         "Arduino",
