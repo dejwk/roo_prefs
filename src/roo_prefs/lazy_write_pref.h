@@ -1,10 +1,10 @@
 #pragma once
 
-// Similar to Pref<T>, but does not immediately store written data in persistent
-// storage. Instead, writes with a delay, which depends on whether the data
-// stabilized or keeps changing.
-//
-// Depends on the "dejwk/roo_scheduler" library.
+/// Similar to `Pref<T>`, but does not immediately store written data in
+/// persistent storage. Instead, writes with a delay, which depends on whether
+/// the data stabilized or keeps changing.
+///
+/// Depends on the "dejwk/roo_scheduler" library.
 
 #include "roo_prefs/pref.h"
 #include "roo_scheduler.h"
@@ -15,10 +15,10 @@ namespace roo_prefs {
 template <typename T>
 class LazyWritePref {
  public:
-  // Creates a lazy-write preference. The data is flushed to persistent storage
-  // using `scheduler`, after it has been stable for at least
-  // `stable_write_latency` seconds, but no later than unstable_write_latency_s
-  // after the last write.
+  /// Creates a lazy-write preference. The data is flushed to persistent storage
+  /// using `scheduler`, after it has been stable for at least
+  /// `stable_write_latency` seconds, but no later than
+  /// `unstable_write_latency_s` after the last write.
   LazyWritePref(Collection& collection, roo_scheduler::Scheduler& scheduler,
                 const char* key, T default_value = T(),
                 uint8_t stable_write_latency_s = 2,
@@ -105,7 +105,7 @@ void LazyWritePref<T>::maybeFlush() {
       return;
     }
   }
-  // Reschedule the update.
+  /// Reschedule the update.
   flusher_.scheduleAfter(roo_time::Seconds(stable_write_latency_s_),
                          roo_scheduler::PRIORITY_BACKGROUND);
 }

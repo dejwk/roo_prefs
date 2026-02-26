@@ -9,8 +9,8 @@ class Transaction;
 
 using Store = PreferencesStore;
 
-// Collection corresponds to a preferences namespace. Use it to group related
-// preferences.
+/// Collection corresponds to a preferences namespace. Use it to group related
+/// preferences.
 class Collection {
  public:
   Collection(const char* name)

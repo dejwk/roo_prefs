@@ -4,8 +4,8 @@
 
 namespace roo_prefs {
 
-// Ref-counted RAII for managing access to Preference namespaces. Allows
-// orchestrating access to the Store.
+/// Ref-counted RAII for managing access to Preference namespaces. Allows
+/// orchestrating access to the Store.
 class Transaction {
  public:
   Transaction(Collection& collection, bool read_only = false)
