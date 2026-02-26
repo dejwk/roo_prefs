@@ -21,7 +21,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
 
   lazy.set(42);
   scheduler.executeEligibleTasks();
-  EXPECT_EQ(42, lazy.get());
+  EXPECT_EQ(42u, lazy.get());
   {
     Transaction t(col);
     uint32_t val;
@@ -30,7 +30,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
 
   roo_time::Delay(roo_time::Millis(500));
   scheduler.executeEligibleTasks();
-  EXPECT_EQ(42, lazy.get());
+  EXPECT_EQ(42u, lazy.get());
   {
     Transaction t(col);
     uint32_t val;
@@ -39,7 +39,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
 
   lazy.set(84);
   scheduler.executeEligibleTasks();
-  EXPECT_EQ(84, lazy.get());
+  EXPECT_EQ(84u, lazy.get());
   {
     Transaction t(col);
     uint32_t val;
@@ -48,12 +48,12 @@ TEST(LazyWritePrefTest, BasicOperations) {
 
   roo_time::Delay(roo_time::Millis(2100));
   scheduler.executeEligibleTasks();
-  EXPECT_EQ(84, lazy.get());
+  EXPECT_EQ(84u, lazy.get());
   {
     Transaction t(col);
     uint32_t val;
     ASSERT_EQ(ReadResult::kOk, t.store().readU32("u32", val));
-    EXPECT_EQ(84, val);
+    EXPECT_EQ(84u, val);
   }
 }
 

@@ -54,13 +54,13 @@ TEST(PrefsTest, AllSimpleTypes) {
   EXPECT_EQ(false, pref_bool.get());
 
   EXPECT_FALSE(pref_u8.isSet());
-  EXPECT_EQ(0, pref_u8.get());
-  pref_u8.set(123);
+  EXPECT_EQ(static_cast<uint8_t>(0), pref_u8.get());
+  pref_u8.set(static_cast<uint8_t>(123));
   EXPECT_TRUE(pref_u8.isSet());
-  EXPECT_EQ(123, pref_u8.get());
+  EXPECT_EQ(static_cast<uint8_t>(123), pref_u8.get());
   pref_u8.clear();
   EXPECT_FALSE(pref_u8.isSet());
-  EXPECT_EQ(0, pref_u8.get());
+  EXPECT_EQ(static_cast<uint8_t>(0), pref_u8.get());
 
   EXPECT_FALSE(pref_i8.isSet());
   EXPECT_EQ(0, pref_i8.get());
@@ -72,13 +72,13 @@ TEST(PrefsTest, AllSimpleTypes) {
   EXPECT_EQ(0, pref_i8.get());
 
   EXPECT_FALSE(pref_u16.isSet());
-  EXPECT_EQ(0, pref_u16.get());
-  pref_u16.set(12345);
+  EXPECT_EQ(static_cast<uint16_t>(0), pref_u16.get());
+  pref_u16.set(static_cast<uint16_t>(12345));
   EXPECT_TRUE(pref_u16.isSet());
-  EXPECT_EQ(12345, pref_u16.get());
+  EXPECT_EQ(static_cast<uint16_t>(12345), pref_u16.get());
   pref_u16.clear();
   EXPECT_FALSE(pref_u16.isSet());
-  EXPECT_EQ(0, pref_u16.get());
+  EXPECT_EQ(static_cast<uint16_t>(0), pref_u16.get());
 
   EXPECT_FALSE(pref_i16.isSet());
   EXPECT_EQ(0, pref_i16.get());
@@ -90,13 +90,13 @@ TEST(PrefsTest, AllSimpleTypes) {
   EXPECT_EQ(0, pref_i16.get());
 
   EXPECT_FALSE(pref_u32.isSet());
-  EXPECT_EQ(0, pref_u32.get());
-  pref_u32.set(1234567890);
+  EXPECT_EQ(0u, pref_u32.get());
+  pref_u32.set(1234567890u);
   EXPECT_TRUE(pref_u32.isSet());
-  EXPECT_EQ(1234567890, pref_u32.get());
+  EXPECT_EQ(1234567890u, pref_u32.get());
   pref_u32.clear();
   EXPECT_FALSE(pref_u32.isSet());
-  EXPECT_EQ(0, pref_u32.get());
+  EXPECT_EQ(0u, pref_u32.get());
 
   EXPECT_FALSE(pref_i32.isSet());
   EXPECT_EQ(0, pref_i32.get());
@@ -108,13 +108,13 @@ TEST(PrefsTest, AllSimpleTypes) {
   EXPECT_EQ(0, pref_i32.get());
 
   EXPECT_FALSE(pref_u64.isSet());
-  EXPECT_EQ(0, pref_u64.get());
+  EXPECT_EQ(0ULL, pref_u64.get());
   pref_u64.set(1234567890123456789ULL);
   EXPECT_TRUE(pref_u64.isSet());
   EXPECT_EQ(1234567890123456789ULL, pref_u64.get());
   pref_u64.clear();
   EXPECT_FALSE(pref_u64.isSet());
-  EXPECT_EQ(0, pref_u64.get());
+  EXPECT_EQ(0ULL, pref_u64.get());
 
   EXPECT_FALSE(pref_i64.isSet());
   EXPECT_EQ(0, pref_i64.get());
@@ -260,11 +260,11 @@ TEST(PrefsTest, NestedTransactions) {
     {
       Transaction t2(col);
       EXPECT_TRUE(col.inTransaction());
-      EXPECT_EQ(42, pref.get());
+      EXPECT_EQ(42u, pref.get());
       pref.set(84);
     }
     EXPECT_TRUE(col.inTransaction());
-    EXPECT_EQ(84, pref.get());
+    EXPECT_EQ(84u, pref.get());
   }
   EXPECT_FALSE(col.inTransaction());
 }
