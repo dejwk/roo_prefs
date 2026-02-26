@@ -1,5 +1,7 @@
 #pragma once
 
+#include "roo_logging/stream.h"
+
 namespace roo_prefs {
 
 /// Result of reading a value from storage.
@@ -10,6 +12,14 @@ enum class WriteResult { kOk, kError };
 
 /// Result of clearing a value from storage.
 enum class ClearResult { kOk, kError };
+
+const char* ReadResultToString(ReadResult result);
+const char* WriteResultToString(WriteResult result);
+const char* ClearResultToString(ClearResult result);
+
+roo_logging::Stream& operator<<(roo_logging::Stream& os, ReadResult result);
+roo_logging::Stream& operator<<(roo_logging::Stream& os, WriteResult result);
+roo_logging::Stream& operator<<(roo_logging::Stream& os, ClearResult result);
 
 /// @deprecated Use `ReadResult::kOk` instead.
 constexpr ReadResult READ_OK = ReadResult::kOk;
