@@ -222,29 +222,29 @@ TEST(PrefsTest, DirectAccess) {
     EXPECT_TRUE(col.inTransaction());
     EXPECT_FALSE(t.store().isKey("pref_int"));
     int32_t val = 1234;
-    EXPECT_EQ(READ_NOT_FOUND, t.store().readI32("pref_int", val));
+    EXPECT_EQ(ReadResult::kNotFound, t.store().readI32("pref_int", val));
     t.store().writeI32("pref_int", 999);
     EXPECT_TRUE(t.store().isKey("pref_int"));
-    EXPECT_EQ(READ_OK, t.store().readI32("pref_int", val));
+    EXPECT_EQ(ReadResult::kOk, t.store().readI32("pref_int", val));
     EXPECT_EQ(val, 999);
     uint32_t uval = 1234;
-    EXPECT_EQ(READ_WRONG_TYPE, t.store().readU32("pref_int", uval));
+    EXPECT_EQ(ReadResult::kWrongType, t.store().readU32("pref_int", uval));
   }
   {
     Transaction t(col);
     EXPECT_TRUE(t.store().isKey("pref_int"));
     int32_t val = 1234;
-    EXPECT_EQ(READ_OK, t.store().readI32("pref_int", val));
+    EXPECT_EQ(ReadResult::kOk, t.store().readI32("pref_int", val));
     EXPECT_EQ(val, 999);
     t.store().clear("pref_int");
     EXPECT_FALSE(t.store().isKey("pref_int"));
-    EXPECT_EQ(READ_NOT_FOUND, t.store().readI32("pref_int", val));
+    EXPECT_EQ(ReadResult::kNotFound, t.store().readI32("pref_int", val));
   }
   {
     Transaction t(col);
     EXPECT_FALSE(t.store().isKey("pref_int"));
     int32_t val = 1234;
-    EXPECT_EQ(READ_NOT_FOUND, t.store().readI32("pref_int", val));
+    EXPECT_EQ(ReadResult::kNotFound, t.store().readI32("pref_int", val));
   }
   EXPECT_FALSE(col.inTransaction());
 }

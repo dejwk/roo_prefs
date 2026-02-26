@@ -1,8 +1,7 @@
 #include "roo_prefs/lazy_write_pref.h"
 
-#include "roo_testing/system/timer.h"
-
 #include "gtest/gtest.h"
+#include "roo_testing/system/timer.h"
 
 namespace roo_prefs {
 TEST(LazyWritePrefTest, BasicOperations) {
@@ -17,7 +16,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
   {
     Transaction t(col);
     uint32_t val;
-    EXPECT_EQ(READ_NOT_FOUND, t.store().readU32("u32", val));
+    EXPECT_EQ(ReadResult::kNotFound, t.store().readU32("u32", val));
   }
 
   lazy.set(42);
@@ -26,7 +25,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
   {
     Transaction t(col);
     uint32_t val;
-    EXPECT_EQ(READ_NOT_FOUND, t.store().readU32("u32", val));
+    EXPECT_EQ(ReadResult::kNotFound, t.store().readU32("u32", val));
   }
 
   roo_time::Delay(roo_time::Millis(500));
@@ -35,7 +34,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
   {
     Transaction t(col);
     uint32_t val;
-    EXPECT_EQ(READ_NOT_FOUND, t.store().readU32("u32", val));
+    EXPECT_EQ(ReadResult::kNotFound, t.store().readU32("u32", val));
   }
 
   lazy.set(84);
@@ -44,7 +43,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
   {
     Transaction t(col);
     uint32_t val;
-    EXPECT_EQ(READ_NOT_FOUND, t.store().readU32("u32", val));
+    EXPECT_EQ(ReadResult::kNotFound, t.store().readU32("u32", val));
   }
 
   roo_time::Delay(roo_time::Millis(2100));
@@ -53,7 +52,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
   {
     Transaction t(col);
     uint32_t val;
-    ASSERT_EQ(READ_OK, t.store().readU32("u32", val));
+    ASSERT_EQ(ReadResult::kOk, t.store().readU32("u32", val));
     EXPECT_EQ(84, val);
   }
 }

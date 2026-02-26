@@ -61,7 +61,7 @@ class Pref {
   bool clear();
 
  private:
-  enum PrefState { UNKNOWN, UNSET, SET, ERROR };
+  enum class PrefState { kUnknown, kUnset, kSet, kError };
 
   void sync() const;
 
@@ -259,13 +259,13 @@ Pref<T>::Pref(Collection& collection, const char* key, T default_value)
     : collection_(collection),
       key_(key),
       default_value_(std::move(default_value)),
-      state_(UNKNOWN),
+      state_(PrefState::kUnknown),
       value_(default_value) {}
 
 template <typename T>
 bool Pref<T>::isSet() const {
   sync();
-  return (state_ == SET);
+  return (state_ == PrefState::kSet);
 }
 
 template <typename T>
@@ -277,22 +277,22 @@ const T& Pref<T>::get() const {
 template <typename T>
 bool Pref<T>::set(const T& value) {
   sync();
-  if (state_ == SET && value_ == value) {
+  if (state_ == PrefState::kSet && value_ == value) {
     return true;
   }
   Transaction t(collection_);
   if (!t.active()) {
-    state_ = ERROR;
+    state_ = PrefState::kError;
     return false;
   }
   switch (internal::StoreWrite(t.store(), key_, value)) {
-    case WRITE_OK: {
+    case WriteResult::kOk: {
       value_ = value;
-      state_ = SET;
+      state_ = PrefState::kSet;
       return true;
     }
     default: {
-      state_ = ERROR;
+      state_ = PrefState::kError;
       return false;
     }
   }
@@ -301,22 +301,22 @@ bool Pref<T>::set(const T& value) {
 template <typename T>
 bool Pref<T>::clear() {
   sync();
-  if (state_ == UNSET) {
+  if (state_ == PrefState::kUnset) {
     return true;
   }
   Transaction t(collection_);
   if (!t.active()) {
-    state_ = ERROR;
+    state_ = PrefState::kError;
     return false;
   }
   switch (internal::StoreClear(t.store(), key_)) {
-    case CLEAR_OK: {
-      state_ = UNSET;
+    case ClearResult::kOk: {
+      state_ = PrefState::kUnset;
       value_ = default_value_;
       return true;
     }
     default: {
-      state_ = ERROR;
+      state_ = PrefState::kError;
       return false;
     }
   }
@@ -324,25 +324,25 @@ bool Pref<T>::clear() {
 
 template <typename T>
 void Pref<T>::sync() const {
-  if (state_ == UNKNOWN || state_ == ERROR) {
+  if (state_ == PrefState::kUnknown || state_ == PrefState::kError) {
     Transaction t(collection_, true);
     if (!t.active()) {
-      state_ = UNSET;
+      state_ = PrefState::kUnset;
       value_ = default_value_;
       return;
     }
     switch (internal::StoreRead(t.store(), key_, value_)) {
-      case READ_OK: {
-        state_ = SET;
+      case ReadResult::kOk: {
+        state_ = PrefState::kSet;
         return;
       }
-      case READ_NOT_FOUND: {
-        state_ = UNSET;
+      case ReadResult::kNotFound: {
+        state_ = PrefState::kUnset;
         value_ = default_value_;
         return;
       }
       default: {
-        state_ = ERROR;
+        state_ = PrefState::kError;
         return;
       }
     }
