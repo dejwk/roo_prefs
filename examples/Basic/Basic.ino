@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "roo_prefs.h"
 #include "roo_prefs/pref.h"
 
 roo_prefs::Collection prefs("main");
