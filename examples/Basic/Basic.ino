@@ -1,5 +1,8 @@
 #include <Arduino.h>
 
+// Note: on ESP8266, also add the vshymanskyy/Preferences to the library
+// dependencies.
+
 #include "roo_prefs.h"
 #include "roo_prefs/pref.h"
 
