@@ -179,12 +179,13 @@ inline ReadResult StoreRead<std::string>(Store& store, const char* key,
 #ifdef ARDUINO
 template <>
 inline WriteResult StoreWrite<String>(Store& store, const char* key,
-                                     const String& val) {
+                                      const String& val) {
   return store.writeString(key, val.c_str());
 }
 
 template <>
-inline ReadResult StoreRead<String>(Store& store, const char* key, String& val) {
+inline ReadResult StoreRead<String>(Store& store, const char* key,
+                                    String& val) {
   std::string temp;
   ReadResult result = store.readString(key, temp);
   if (result == ReadResult::kOk) {
