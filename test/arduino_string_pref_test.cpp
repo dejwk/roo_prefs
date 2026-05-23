@@ -9,19 +9,19 @@ const char* test_string =
 TEST(PrefsTest, ArduinoString) {
   Collection col("foo");
 
-  Pref<::String> pref_writer(col, "arduino_str");
+  ArduinoString pref_writer(col, "arduino_str");
   EXPECT_FALSE(pref_writer.isSet());
   EXPECT_STREQ("", pref_writer.get().c_str());
 
   EXPECT_TRUE(pref_writer.set(::String(test_string)));
 
-  Pref<::String> pref_reader(col, "arduino_str");
+  ArduinoString pref_reader(col, "arduino_str");
   EXPECT_TRUE(pref_reader.isSet());
   EXPECT_STREQ(test_string, pref_reader.get().c_str());
 
   EXPECT_TRUE(pref_reader.clear());
 
-  Pref<::String> pref_cleared(col, "arduino_str");
+  ArduinoString pref_cleared(col, "arduino_str");
   EXPECT_FALSE(pref_cleared.isSet());
   EXPECT_STREQ("", pref_cleared.get().c_str());
 }

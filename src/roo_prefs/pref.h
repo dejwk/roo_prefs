@@ -85,7 +85,13 @@ using Int64 = Pref<int64_t>;
 using Float = Pref<float>;
 using Double = Pref<double>;
 
-using String = Pref<std::string>;
+using StdString = Pref<std::string>;
+
+#ifdef ARDUINO
+using ArduinoString = Pref<::String>;
+#endif
+
+using String = StdString;
 
 /// Implementation details follow.
 
