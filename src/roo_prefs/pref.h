@@ -48,6 +48,105 @@ namespace roo_prefs {
 /// For these reasons, it is generally not a good practice to persist large
 /// objects using this template.
 ///
+
+template <typename V>
+class ValueHolder {
+ public:
+  ValueHolder(const V& other = V()) : value_(other) {}
+  ValueHolder(V&& other) : value_(std::move(other)) {}
+
+  const V& get() const { return value_; }
+  V& get() { return value_; }
+
+  template <typename T>
+  void set(const T& value) {
+    value_ = value;
+  }
+
+  template <typename T>
+  bool equals(const T& other) const {
+    return value_ == other;
+  }
+
+ private:
+  V value_;
+};
+
+template <>
+class ValueHolder<std::string> {
+ public:
+  ValueHolder(const std::string& other = std::string()) : value_(other) {}
+  ValueHolder(std::string&& other) : value_(std::move(other)) {}
+
+  ValueHolder(roo::string_view other) : value_(other.data(), other.length()) {}
+  ValueHolder(const char* other) : value_(other) {}
+
+  const std::string& get() const { return value_; }
+  std::string& get() { return value_; }
+
+  void set(const std::string& value) { value_ = value; }
+
+  void set(roo::string_view value) { assign(value); }
+
+  void set(const char* value) { value_ = (value == nullptr) ? "" : value; }
+
+  template <size_t N>
+  void set(const char (&value)[N]) {
+    assign(toStringView(value));
+  }
+
+  template <typename T>
+  bool equals(const T& other) const {
+    return value_ == other;
+  }
+
+  bool equals(roo::string_view other) const { return equalsStringView(other); }
+
+  bool equals(const char* other) const {
+    return equalsStringView(toStringView(other));
+  }
+
+  template <size_t N>
+  bool equals(const char (&other)[N]) const {
+    return equalsStringView(toStringView(other));
+  }
+
+ private:
+  static roo::string_view toStringView(const char* value) {
+    return roo::string_view((value == nullptr) ? "" : value);
+  }
+
+  template <size_t N>
+  static roo::string_view toStringView(const char (&value)[N]) {
+    size_t size = N;
+    if (size > 0 && value[size - 1] == '\0') {
+      --size;
+    }
+    return roo::string_view(value, size);
+  }
+
+  void assign(roo::string_view value) {
+    if (value.empty()) {
+      value_.clear();
+      return;
+    }
+    value_.assign(value.data(), value.size());
+  }
+
+  bool equalsStringView(roo::string_view other) const {
+    if (value_.size() != other.size()) {
+      return false;
+    }
+    if (other.empty()) {
+      return true;
+    }
+    return std::char_traits<char>::compare(value_.data(), other.data(),
+                                           other.size()) == 0;
+  }
+
+  std::string value_;
+};
+
 template <typename T>
 class Pref {
  public:
@@ -57,7 +156,8 @@ class Pref {
 
   const T& get() const;
 
-  bool set(const T& value);
+  template <typename V = T>
+  bool set(const V& value);
 
   bool clear();
 
@@ -70,7 +170,7 @@ class Pref {
   const char* key_;
   T default_value_;
   mutable PrefState state_;
-  mutable T value_;
+  mutable ValueHolder<T> value_;
 };
 
 using Bool = Pref<bool>;
@@ -112,13 +212,14 @@ bool Pref<T>::isSet() const {
 template <typename T>
 const T& Pref<T>::get() const {
   sync();
-  return value_;
+  return value_.get();
 }
 
 template <typename T>
-bool Pref<T>::set(const T& value) {
+template <typename V>
+bool Pref<T>::set(const V& value) {
   sync();
-  if (state_ == PrefState::kSet && value_ == value) {
+  if (state_ == PrefState::kSet && value_.equals(value)) {
     return true;
   }
   Transaction t(collection_);
@@ -126,9 +227,9 @@ bool Pref<T>::set(const T& value) {
     state_ = PrefState::kError;
     return false;
   }
-  switch (StoreWrite(t.store(), key_, value)) {
+  switch (StoreWrite(t.store(), key_, ValueHolder<T>(value).get())) {
     case WriteResult::kOk: {
-      value_ = value;
+      value_.set(value);
       state_ = PrefState::kSet;
       return true;
     }
@@ -153,7 +254,7 @@ bool Pref<T>::clear() {
   switch (StoreClear(t.store(), key_)) {
     case ClearResult::kOk: {
       state_ = PrefState::kUnset;
-      value_ = default_value_;
+      value_.set(default_value_);
       return true;
     }
     default: {
@@ -169,17 +270,17 @@ void Pref<T>::sync() const {
     Transaction t(collection_, true);
     if (!t.active()) {
       state_ = PrefState::kUnset;
-      value_ = default_value_;
+      value_.set(default_value_);
       return;
     }
-    switch (StoreRead(t.store(), key_, value_)) {
+    switch (StoreRead(t.store(), key_, value_.get())) {
       case ReadResult::kOk: {
         state_ = PrefState::kSet;
         return;
       }
       case ReadResult::kNotFound: {
         state_ = PrefState::kUnset;
-        value_ = default_value_;
+        value_.set(default_value_);
         return;
       }
       default: {

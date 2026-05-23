@@ -158,6 +158,21 @@ TEST(PrefsTest, String) {
   EXPECT_EQ("", pref_str.get());
 }
 
+TEST(PrefsTest, StringMixedSetTypes) {
+  Collection col("foo");
+  roo_prefs::String pref_str(col, "mixed_str");
+
+  EXPECT_TRUE(pref_str.set("Literal string"));
+  EXPECT_EQ("Literal string", pref_str.get());
+
+  roo::string_view view("View string");
+  EXPECT_TRUE(pref_str.set(view));
+  EXPECT_EQ("View string", pref_str.get());
+
+  EXPECT_TRUE(pref_str.set(std::string("Moved string")));
+  EXPECT_EQ("Moved string", pref_str.get());
+}
+
 TEST(PrefsTest, Struct) {
   struct MyStruct {
     MyStruct(int32_t a = 0, float b = 0.0f) : a(a), b(b) {}
