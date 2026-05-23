@@ -6,6 +6,10 @@
 
 #include "roo_prefs/store/preferences_store.h"
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
+
 namespace roo_prefs {
 
 using Store = PreferencesStore;
@@ -171,5 +175,24 @@ inline ReadResult StoreRead<std::string>(Store& store, const char* key,
                                          std::string& val) {
   return store.readString(key, val);
 }
+
+#ifdef ARDUINO
+template <>
+inline WriteResult StoreWrite<String>(Store& store, const char* key,
+                                     const String& val) {
+  return store.writeString(key, val.c_str());
+}
+
+template <>
+inline ReadResult StoreRead<String>(Store& store, const char* key, String& val) {
+  std::string temp;
+  ReadResult result = store.readString(key, temp);
+  if (result == ReadResult::kOk) {
+    val = String(temp.c_str());
+  }
+  return result;
+}
+
+#endif
 
 }  // namespace roo_prefs

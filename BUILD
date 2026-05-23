@@ -38,6 +38,22 @@ cc_test(
 )
 
 cc_test(
+    name = "arduino_string_pref_test",
+    size = "small",
+    srcs = [
+        "test/arduino_string_pref_test.cpp",
+    ],
+    copts = ["-Iexternal/gtest/include"],
+    defines = ["ARDUINO=10805"],
+    includes = ["src"],
+    linkstatic = 1,
+    deps = [
+        ":roo_prefs",
+        "@roo_testing//:arduino_gtest_main",
+    ],
+)
+
+cc_test(
     name = "lazy_write_pref_test",
     size = "small",
     srcs = [
