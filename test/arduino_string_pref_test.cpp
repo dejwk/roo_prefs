@@ -3,6 +3,9 @@
 
 namespace roo_prefs {
 
+const char* test_string =
+    "Test string, long enough to not fit in the internal stack buffer.";
+
 TEST(PrefsTest, ArduinoString) {
   Collection col("foo");
 
@@ -10,11 +13,11 @@ TEST(PrefsTest, ArduinoString) {
   EXPECT_FALSE(pref_writer.isSet());
   EXPECT_STREQ("", pref_writer.get().c_str());
 
-  EXPECT_TRUE(pref_writer.set(::String("Test string")));
+  EXPECT_TRUE(pref_writer.set(::String(test_string)));
 
   Pref<::String> pref_reader(col, "arduino_str");
   EXPECT_TRUE(pref_reader.isSet());
-  EXPECT_STREQ("Test string", pref_reader.get().c_str());
+  EXPECT_STREQ(test_string, pref_reader.get().c_str());
 
   EXPECT_TRUE(pref_reader.clear());
 
