@@ -58,15 +58,9 @@ class ValueHolder {
   const V& get() const { return value_; }
   V& get() { return value_; }
 
-  template <typename T>
-  void set(const T& value) {
-    value_ = value;
-  }
+  void set(const V& value) { value_ = value; }
 
-  template <typename T>
-  bool equals(const T& other) const {
-    return value_ == other;
-  }
+  bool equals(const V& other) const { return value_ == other; }
 
  private:
   V value_;
@@ -110,6 +104,27 @@ class ValueHolder<std::string> {
   bool equals(const char (&other)[N]) const {
     return equalsStringView(toStringView(other));
   }
+
+#ifdef ARDUINO
+  void set(const ::String& value) {
+    if (value.isEmpty()) {
+      value_.clear();
+      return;
+    }
+    value_.assign(value.c_str(), value.length());
+  }
+
+  bool equals(const ::String& other) const {
+    if (value_.size() != other.length()) {
+      return false;
+    }
+    if (other.length() == 0) {
+      return true;
+    }
+    return std::char_traits<char>::compare(value_.data(), other.c_str(),
+                                           other.length()) == 0;
+  }
+#endif
 
  private:
   static roo::string_view toStringView(const char* value) {

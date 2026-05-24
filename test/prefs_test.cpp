@@ -163,14 +163,22 @@ TEST(PrefsTest, StringMixedSetTypes) {
   roo_prefs::String pref_str(col, "mixed_str");
 
   EXPECT_TRUE(pref_str.set("Literal string"));
-  EXPECT_EQ("Literal string", pref_str.get());
+  roo_prefs::String pref_literal_reader(col, "mixed_str");
+  EXPECT_EQ("Literal string", pref_literal_reader.get());
+
+  const char* c_str = "Const char* string";
+  EXPECT_TRUE(pref_str.set(c_str));
+  roo_prefs::String pref_c_str_reader(col, "mixed_str");
+  EXPECT_EQ("Const char* string", pref_c_str_reader.get());
 
   roo::string_view view("View string");
   EXPECT_TRUE(pref_str.set(view));
-  EXPECT_EQ("View string", pref_str.get());
+  roo_prefs::String pref_view_reader(col, "mixed_str");
+  EXPECT_EQ("View string", pref_view_reader.get());
 
   EXPECT_TRUE(pref_str.set(std::string("Moved string")));
-  EXPECT_EQ("Moved string", pref_str.get());
+  roo_prefs::String pref_std_string_reader(col, "mixed_str");
+  EXPECT_EQ("Moved string", pref_std_string_reader.get());
 }
 
 TEST(PrefsTest, Struct) {
@@ -271,7 +279,7 @@ TEST(PrefsTest, NestedTransactions) {
   {
     Transaction t1(col);
     EXPECT_TRUE(col.inTransaction());
-    pref.set(42);
+    pref.set(42u);
     {
       Transaction t2(col);
       EXPECT_TRUE(col.inTransaction());
