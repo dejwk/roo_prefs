@@ -8,6 +8,8 @@ Uses Arduino Preferences lib under the hood.
 
 Written for and tested with ESP32 family of microcontrollers, but should be easily portable to anything that uses standard C++.
 
+For a complete walkthrough, see the [programming guide](doc/programming_guide.md).
+
 Basic usage:
 
 ```cpp
