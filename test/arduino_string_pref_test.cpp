@@ -26,6 +26,34 @@ TEST(PrefsTest, ArduinoString) {
   EXPECT_STREQ("", pref_cleared.get().c_str());
 }
 
+TEST(PrefsTest, ArduinoStringMixedSetTypes) {
+  Collection col("foo");
+  ArduinoString pref_writer(col, "ard_mix");
+
+  const char* c_str = "Const char* string, long enough for persistence.";
+  EXPECT_TRUE(pref_writer.set(c_str));
+
+  ArduinoString pref_c_str_reader(col, "ard_mix");
+  EXPECT_TRUE(pref_c_str_reader.isSet());
+  EXPECT_STREQ(c_str, pref_c_str_reader.get().c_str());
+
+  std::string owned =
+      "Owned std::string content, long enough for persistence.";
+  EXPECT_TRUE(pref_writer.set(owned));
+
+  ArduinoString pref_std_string_reader(col, "ard_mix");
+  EXPECT_TRUE(pref_std_string_reader.isSet());
+  EXPECT_STREQ(owned.c_str(), pref_std_string_reader.get().c_str());
+
+  const char view_source[] = "View string with trailing payload";
+  roo::string_view view(view_source, 11);
+  EXPECT_TRUE(pref_writer.set(view));
+
+  ArduinoString pref_view_reader(col, "ard_mix");
+  EXPECT_TRUE(pref_view_reader.isSet());
+  EXPECT_STREQ("View string", pref_view_reader.get().c_str());
+}
+
 TEST(PrefsTest, StringFromArduinoString) {
   Collection col("foo");
 

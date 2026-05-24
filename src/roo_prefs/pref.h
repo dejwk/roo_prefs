@@ -75,6 +75,10 @@ class ValueHolder<std::string> {
   ValueHolder(roo::string_view other) : value_(other.data(), other.length()) {}
   ValueHolder(const char* other) : value_(other) {}
 
+#ifdef ARDUINO
+  ValueHolder(const ::String& other) : value_(other.c_str(), other.length()) {}
+#endif
+
   const std::string& get() const { return value_; }
   std::string& get() { return value_; }
 
@@ -161,6 +165,89 @@ class ValueHolder<std::string> {
 
   std::string value_;
 };
+
+#ifdef ARDUINO
+template <>
+class ValueHolder<::String> {
+ public:
+  ValueHolder(const ::String& other = ::String()) : value_(other) {}
+
+  ValueHolder(roo::string_view other) : value_(other.data(), other.length()) {}
+
+  ValueHolder(const std::string& other)
+      : value_(other.data(), other.length()) {}
+
+  ValueHolder(const char* other) : value_((other == nullptr) ? "" : other) {}
+
+  const ::String& get() const { return value_; }
+  ::String& get() { return value_; }
+
+  void set(const ::String& value) { value_ = value; }
+
+  void set(roo::string_view value) { assign(value); }
+
+  void set(const std::string& value) {
+    value_ = ::String(value.data(), value.length());
+  }
+
+  void set(const char* value) { value_ = (value == nullptr) ? "" : value; }
+
+  template <size_t N>
+  void set(const char (&value)[N]) {
+    assign(toStringView(value));
+  }
+
+  bool equals(const ::String& other) const {
+    return equalsStringView(roo::string_view(other.c_str(), other.length()));
+  }
+
+  bool equals(roo::string_view other) const { return equalsStringView(other); }
+
+  bool equals(const std::string& other) const {
+    return equalsStringView(roo::string_view(other.data(), other.length()));
+  }
+
+  bool equals(const char* other) const {
+    return equalsStringView(toStringView(other));
+  }
+
+  template <size_t N>
+  bool equals(const char (&other)[N]) const {
+    return equalsStringView(toStringView(other));
+  }
+
+ private:
+  static roo::string_view toStringView(const char* value) {
+    return roo::string_view((value == nullptr) ? "" : value);
+  }
+
+  template <size_t N>
+  static roo::string_view toStringView(const char (&value)[N]) {
+    size_t size = N;
+    if (size > 0 && value[size - 1] == '\0') {
+      --size;
+    }
+    return roo::string_view(value, size);
+  }
+
+  void assign(roo::string_view value) {
+    value_ = ::String(value.data(), value.length());
+  }
+
+  bool equalsStringView(roo::string_view other) const {
+    if (value_.length() != other.size()) {
+      return false;
+    }
+    if (other.empty()) {
+      return true;
+    }
+    return std::char_traits<char>::compare(value_.c_str(), other.data(),
+                                           other.size()) == 0;
+  }
+
+  ::String value_;
+};
+#endif
 
 template <typename T>
 class Pref {
