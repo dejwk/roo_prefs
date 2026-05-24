@@ -184,7 +184,7 @@ Serial.println(target_pool_temp.get());    // 28.0
 Check the boolean return value of `set()` and `clear()` whenever the setting is
 important for correct operation.
 
-### Reading several preferences together
+### Transactions
 
 For occasional reads, it is fine to let each preference create its own
 implicit transaction. When you are reading or writing several values at once,
@@ -198,7 +198,7 @@ struct PoolSettings {
 };
 
 PoolSettings ReadPoolSettings() {
-  roo_prefs::Transaction transaction(prefs, true);
+  roo_prefs::Transaction transaction(prefs, roo_prefs::Transaction::Mode::kReadOnly);
   CHECK(transaction.active());
 
   return PoolSettings{
@@ -213,27 +213,12 @@ The explicit transaction keeps the namespace open for the whole block. Calls
 to `get()` inside the block reuse it through the collection's nested
 transaction support.
 
-Use `Transaction(prefs, true)` for read-only work. For writes, use the default
-read-write transaction: `Transaction(prefs)`.
-
-## Transactions
+Use `Transaction(prefs, roo_prefs::Transaction::Mode::kReadOnly)` if you only need
+to read the preferences. For writes, you can skip the parameter: `Transaction(prefs)`.
 
 `roo_prefs::Transaction` is a scoped guard around `Preferences::begin()` and
-`Preferences::end()`:
-
-```cpp
-roo_prefs::Uint32 boot_count(prefs, "boots", 0);
-
-void WriteBootCount(uint32_t value) {
-  roo_prefs::Transaction transaction(prefs);
-  CHECK(transaction.active());
-
-  CHECK(boot_count.set(value));
-}
-```
-
-Transactions are reference-counted and reentrant. If the collection is already
-open, inner `get()`, `set()`, and `clear()` calls reuse it automatically. That
+`Preferences::end()`. Transactions are reference-counted and reentrant. If the collection
+is already open, inner `get()`, `set()`, and `clear()` calls reuse it automatically. That
 makes helper functions easy to compose:
 
 ```cpp
@@ -257,14 +242,11 @@ void StorePair() {
 In the example above, the underlying namespace is opened once by `StorePair()`
 and closed when `StorePair()` returns.
 
-Transactions are reentrant, but a live read-only transaction cannot be
+Note: while transactions are reentrant, a read-only transaction cannot be
 upgraded to read-write. If the collection is already open read-only and inner
 code tries to open a write transaction, that inner transaction becomes
-inactive.
-
-When a block may write, make the outermost transaction read-write from the
-start. Use read-only transactions only for blocks that are guaranteed not to
-modify storage.
+inactive. For this reason, when a block may possibly write, make the outermost
+transaction read-write from the start.
 
 ## Custom types
 

@@ -8,10 +8,17 @@ namespace roo_prefs {
 /// orchestrating access to the Store.
 class Transaction {
  public:
-  Transaction(Collection& collection, bool read_only = false)
+  enum class Mode { kReadWrite, kReadOnly };
+
+  Transaction(Collection& collection, Mode mode = Mode::kReadWrite)
       : collection_(collection) {
-    active_ = collection_.inc(read_only);
+    active_ = collection_.inc(mode == Mode::kReadOnly);
   }
+
+  [[deprecated("Use Transaction(Collection&, Transaction::Mode) instead")]]
+  Transaction(Collection& collection, bool read_only)
+      : Transaction(collection,
+                    read_only ? Mode::kReadOnly : Mode::kReadWrite) {}
 
   ~Transaction() {
     if (active_) collection_.dec();

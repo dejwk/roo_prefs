@@ -170,7 +170,7 @@ bool Pref<T>::clear() {
 template <typename T>
 void Pref<T>::sync() const {
   if (state_ == PrefState::kUnknown || state_ == PrefState::kError) {
-    Transaction t(collection_, true);
+    Transaction t(collection_, Transaction::Mode::kReadOnly);
     if (!t.active()) {
       state_ = PrefState::kUnset;
       value_.set(default_value_);
