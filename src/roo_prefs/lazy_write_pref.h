@@ -10,6 +10,10 @@
 #include "roo_scheduler.h"
 #include "roo_time.h"
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
+
 namespace roo_prefs {
 
 template <typename T>
@@ -56,6 +60,11 @@ using LazyUint64 = LazyWritePref<uint64_t>;
 using LazyInt64 = LazyWritePref<int64_t>;
 using LazyFloat = LazyWritePref<float>;
 using LazyDouble = LazyWritePref<double>;
+using LazyString = LazyWritePref<std::string>;
+
+#ifdef ARDUINO
+using LazyArduinoString = LazyWritePref<::String>;
+#endif
 
 template <typename T>
 LazyWritePref<T>::LazyWritePref(Collection& collection,
