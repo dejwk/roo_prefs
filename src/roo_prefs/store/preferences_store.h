@@ -45,6 +45,10 @@ class PreferencesStore {
 
   WriteResult writeString(const char* key, roo::string_view val);
 
+  /// Stores a raw byte blob.
+  ///
+  /// Empty blobs are unsupported because the underlying Arduino
+  /// `Preferences::putBytes()` API rejects zero-length writes.
   WriteResult writeBytes(const char* key, const void* val, size_t len);
 
   template <typename T>
