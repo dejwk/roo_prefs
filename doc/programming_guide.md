@@ -1,11 +1,11 @@
 # Programming guide
 
-## When to use this library?
+## Purpose
 
 `roo_prefs` is a small wrapper around the Arduino `Preferences` library. Use it
 for application or library settings that must survive resets: WiFi credentials,
 thresholds, user choices, calibration constants, counters, timers, and similar
-small values.
+small values. It works with Arduino and esp-idf.
 
 The library adds three conveniences on top of Arduino `Preferences`:
 
