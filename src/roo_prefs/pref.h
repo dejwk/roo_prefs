@@ -49,6 +49,33 @@ namespace roo_prefs {
 /// objects using this template.
 ///
 
+namespace internal {
+
+static roo::string_view ToStringView(roo::string_view value) { return value; }
+
+static roo::string_view ToStringView(const std::string& value) {
+  return roo::string_view(value.c_str(), value.size());
+}
+
+static roo::string_view ToStringView(const char* value) {
+  return roo::string_view((value == nullptr) ? "" : value);
+}
+
+template <size_t N>
+static roo::string_view ToStringView(const char (&value)[N]) {
+  size_t size = N;
+  if (size > 0 && value[size - 1] == '\0') {
+    --size;
+  }
+  return roo::string_view(value, size);
+}
+
+#ifdef ARDUINO
+static roo::string_view ToStringView(const ::String& value) {
+  return roo::string_view(value.c_str(), value.length());
+}
+#endif
+
 template <typename V>
 class ValueHolder {
  public:
@@ -62,6 +89,8 @@ class ValueHolder {
 
   bool equals(const V& other) const { return value_ == other; }
 
+  static const V& Assignable(const V& value) { return value; }
+
  private:
   V value_;
 };
@@ -72,79 +101,23 @@ class ValueHolder<std::string> {
   ValueHolder(const std::string& other = std::string()) : value_(other) {}
   ValueHolder(std::string&& other) : value_(std::move(other)) {}
 
-  ValueHolder(roo::string_view other) : value_(other.data(), other.length()) {}
-  ValueHolder(const char* other) : value_(other) {}
-
-#ifdef ARDUINO
-  ValueHolder(const ::String& other) : value_(other.c_str(), other.length()) {}
-#endif
+  template <typename V>
+  ValueHolder(const V& other) : value_(ToStringView(other)) {}
 
   const std::string& get() const { return value_; }
+
   std::string& get() { return value_; }
 
   void set(const std::string& value) { value_ = value; }
+  void set(std::string&& value) { value_ = std::move(value); }
 
-  void set(roo::string_view value) { assign(value); }
+  bool equals(const std::string& other) const { return value_ == other; }
 
-  void set(const char* value) { value_ = (value == nullptr) ? "" : value; }
-
-  template <size_t N>
-  void set(const char (&value)[N]) {
-    assign(toStringView(value));
+  static const std::string& Assignable(const std::string& value) {
+    return value;
   }
 
-  template <typename T>
-  bool equals(const T& other) const {
-    return value_ == other;
-  }
-
-  bool equals(roo::string_view other) const { return equalsStringView(other); }
-
-  bool equals(const char* other) const {
-    return equalsStringView(toStringView(other));
-  }
-
-  template <size_t N>
-  bool equals(const char (&other)[N]) const {
-    return equalsStringView(toStringView(other));
-  }
-
-#ifdef ARDUINO
-  void set(const ::String& value) {
-    if (value.isEmpty()) {
-      value_.clear();
-      return;
-    }
-    value_.assign(value.c_str(), value.length());
-  }
-
-  bool equals(const ::String& other) const {
-    if (value_.size() != other.length()) {
-      return false;
-    }
-    if (other.length() == 0) {
-      return true;
-    }
-    return std::char_traits<char>::compare(value_.data(), other.c_str(),
-                                           other.length()) == 0;
-  }
-#endif
-
- private:
-  static roo::string_view toStringView(const char* value) {
-    return roo::string_view((value == nullptr) ? "" : value);
-  }
-
-  template <size_t N>
-  static roo::string_view toStringView(const char (&value)[N]) {
-    size_t size = N;
-    if (size > 0 && value[size - 1] == '\0') {
-      --size;
-    }
-    return roo::string_view(value, size);
-  }
-
-  void assign(roo::string_view value) {
+  void set(roo::string_view value) {
     if (value.empty()) {
       value_.clear();
       return;
@@ -152,7 +125,7 @@ class ValueHolder<std::string> {
     value_.assign(value.data(), value.size());
   }
 
-  bool equalsStringView(roo::string_view other) const {
+  bool equals(roo::string_view other) const {
     if (value_.size() != other.size()) {
       return false;
     }
@@ -163,6 +136,24 @@ class ValueHolder<std::string> {
                                            other.size()) == 0;
   }
 
+  static roo::string_view Assignable(roo::string_view value) { return value; }
+
+  template <typename V>
+  void set(const V& value) {
+    set(ToStringView(value));
+  }
+
+  template <typename V>
+  bool equals(const V& other) const {
+    return equals(ToStringView(other));
+  }
+
+  template <typename V>
+  static roo::string_view Assignable(const V& value) {
+    return ToStringView(value);
+  }
+
+ private:
   std::string value_;
 };
 
@@ -172,69 +163,23 @@ class ValueHolder<::String> {
  public:
   ValueHolder(const ::String& other = ::String()) : value_(other) {}
 
-  ValueHolder(roo::string_view other) : value_(other.data(), other.length()) {}
-
-  ValueHolder(const std::string& other)
-      : value_(other.data(), other.length()) {}
-
-  ValueHolder(const char* other) : value_((other == nullptr) ? "" : other) {}
+  template <typename V>
+  ValueHolder(const V& other) : value_(ToStringView(other)) {}
 
   const ::String& get() const { return value_; }
   ::String& get() { return value_; }
 
   void set(const ::String& value) { value_ = value; }
 
-  void set(roo::string_view value) { assign(value); }
-
-  void set(const std::string& value) {
-    value_ = ::String(value.data(), value.length());
-  }
-
-  void set(const char* value) { value_ = (value == nullptr) ? "" : value; }
-
-  template <size_t N>
-  void set(const char (&value)[N]) {
-    assign(toStringView(value));
-  }
-
-  bool equals(const ::String& other) const {
-    return equalsStringView(roo::string_view(other.c_str(), other.length()));
-  }
-
-  bool equals(roo::string_view other) const { return equalsStringView(other); }
-
-  bool equals(const std::string& other) const {
-    return equalsStringView(roo::string_view(other.data(), other.length()));
-  }
-
-  bool equals(const char* other) const {
-    return equalsStringView(toStringView(other));
-  }
-
-  template <size_t N>
-  bool equals(const char (&other)[N]) const {
-    return equalsStringView(toStringView(other));
-  }
-
- private:
-  static roo::string_view toStringView(const char* value) {
-    return roo::string_view((value == nullptr) ? "" : value);
-  }
-
-  template <size_t N>
-  static roo::string_view toStringView(const char (&value)[N]) {
-    size_t size = N;
-    if (size > 0 && value[size - 1] == '\0') {
-      --size;
+  void set(roo::string_view value) {
+    if (value.empty()) {
+      value_.clear();
+      return;
     }
-    return roo::string_view(value, size);
+    value_ = ::String(value.data(), value.size());
   }
 
-  void assign(roo::string_view value) {
-    value_ = ::String(value.data(), value.length());
-  }
-
-  bool equalsStringView(roo::string_view other) const {
+  bool equals(roo::string_view other) const {
     if (value_.length() != other.size()) {
       return false;
     }
@@ -245,9 +190,27 @@ class ValueHolder<::String> {
                                            other.size()) == 0;
   }
 
+  template <typename V>
+  void set(const V& value) {
+    set(ToStringView(value));
+  }
+
+  template <typename V>
+  bool equals(const V& other) const {
+    return equals(ToStringView(other));
+  }
+
+  template <typename V>
+  static roo::string_view Assignable(const V& value) {
+    return ToStringView(value);
+  }
+
+ private:
   ::String value_;
 };
 #endif
+
+}  // namespace internal
 
 template <typename T>
 class Pref {
@@ -272,7 +235,7 @@ class Pref {
   const char* key_;
   T default_value_;
   mutable PrefState state_;
-  mutable ValueHolder<T> value_;
+  mutable internal::ValueHolder<T> value_;
 };
 
 using Bool = Pref<bool>;
@@ -329,7 +292,8 @@ bool Pref<T>::set(const V& value) {
     state_ = PrefState::kError;
     return false;
   }
-  switch (StoreWrite(t.store(), key_, ValueHolder<T>(value).get())) {
+  switch (StoreWrite(t.store(), key_,
+                     internal::ValueHolder<T>::Assignable(value))) {
     case WriteResult::kOk: {
       value_.set(value);
       state_ = PrefState::kSet;
