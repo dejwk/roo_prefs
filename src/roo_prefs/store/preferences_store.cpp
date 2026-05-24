@@ -2,6 +2,30 @@
 
 namespace roo_prefs {
 
+namespace {
+
+bool IsStoredEmptyString(Preferences& prefs, const char* key) {
+  if (prefs.getType(key) != PT_STR) return false;
+  char buf[1];
+  return prefs.getString(key, buf, sizeof(buf)) == 1 && buf[0] == '\0';
+}
+
+ReadResult ReadStoredString(Preferences& prefs, const char* key,
+                            std::string& val) {
+  String result = prefs.getString(key, String());
+  if (result.length() != 0) {
+    val.assign(result.c_str(), result.length());
+    return ReadResult::kOk;
+  }
+  if (IsStoredEmptyString(prefs, key)) {
+    val.clear();
+    return ReadResult::kOk;
+  }
+  return ReadResult::kError;
+}
+
+}  // namespace
+
 bool PreferencesStore::begin(const char* collection_name, bool read_only) {
   return prefs_.begin(collection_name, read_only);
 }
@@ -83,6 +107,12 @@ WriteResult PreferencesStore::writeDouble(const char* key, double val) {
 
 WriteResult PreferencesStore::writeString(const char* key,
                                           roo::string_view val) {
+  if (val.size() == 0) {
+    if (IsStoredEmptyString(prefs_, key)) return WriteResult::kOk;
+    prefs_.putString(key, "");
+    return IsStoredEmptyString(prefs_, key) ? WriteResult::kOk
+                                            : WriteResult::kError;
+  }
   return (prefs_.putBytes(key, val.data(), val.size()) > 0)
              ? WriteResult::kOk
              : WriteResult::kError;
@@ -258,6 +288,7 @@ ReadResult PreferencesStore::readDouble(const char* key, double& val) {
 ReadResult PreferencesStore::readString(const char* key, std::string& val) {
   PreferenceType type = prefs_.getType(key);
   if (type == PT_INVALID) return ReadResult::kNotFound;
+  if (type == PT_STR) return ReadStoredString(prefs_, key, val);
   if (type != PT_BLOB) return ReadResult::kWrongType;
   size_t size = prefs_.getBytesLength(key);
   if (size == 0) {

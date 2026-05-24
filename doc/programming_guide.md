@@ -120,6 +120,12 @@ Serial.println(timeout_ms.get());
 This distinction is useful for first-run setup, optional calibration, and UI
 that should show whether a value has been customized.
 
+Avoid calling `get()`, `isSet()`, `set()`, or `clear()` from constructors.
+Preference access depends on the underlying storage backend being initialized
+first, so reads and writes should happen during normal setup/runtime code
+rather than during object construction, especially for static objects created
+before `main()`.
+
 ### Writing and clearing
 
 `set()` stores the new value persistently and updates the cached value:
@@ -262,6 +268,9 @@ but it also means you must be careful:
 * Do not store pointers, references, or unrelated heap-owning types this way.
 * For text, use `roo_prefs::String`, or `roo_prefs::ArduinoString` on Arduino,
   instead of treating text as a generic object blob.
+* Low-level blob writes through `Transaction::store().writeBytes()` cannot
+  represent empty payloads, because Arduino `Preferences` rejects zero-length
+  BLOB writes.
 * Keep the struct layout stable across firmware versions, or write an explicit
   migration.
 * Provide `operator==`, because `Pref<T>::set()` uses equality to skip

@@ -1,3 +1,5 @@
+#include <array>
+
 #include "gtest/gtest.h"
 #include "roo_prefs.h"
 
@@ -181,6 +183,23 @@ TEST(PrefsTest, StringMixedSetTypes) {
   EXPECT_EQ("Moved string", pref_std_string_reader.get());
 }
 
+TEST(PrefsTest, EmptyStringRoundTrip) {
+  Collection col("foo");
+  roo_prefs::String pref_str(col, "empty_str", "default");
+
+  ASSERT_TRUE(pref_str.set("non-empty"));
+  EXPECT_TRUE(pref_str.isSet());
+  EXPECT_EQ("non-empty", pref_str.get());
+
+  EXPECT_TRUE(pref_str.set(""));
+  EXPECT_TRUE(pref_str.isSet());
+  EXPECT_EQ("", pref_str.get());
+
+  roo_prefs::String pref_reader(col, "empty_str", "default");
+  EXPECT_TRUE(pref_reader.isSet());
+  EXPECT_EQ("", pref_reader.get());
+}
+
 TEST(PrefsTest, Struct) {
   struct MyStruct {
     MyStruct(int32_t a = 0, float b = 0.0f) : a(a), b(b) {}
@@ -270,6 +289,20 @@ TEST(PrefsTest, DirectAccess) {
     EXPECT_EQ(ReadResult::kNotFound, t.store().readI32("pref_int", val));
   }
   EXPECT_FALSE(col.inTransaction());
+}
+
+TEST(PrefsTest, EmptyByteArrayIsUnsupported) {
+  Collection col("foo");
+  std::array<uint8_t, 1> bytes = {{0xAB}};
+
+  Transaction t(col);
+  EXPECT_EQ(WriteResult::kError, t.store().writeBytes("blob", bytes.data(), 0));
+  EXPECT_FALSE(t.store().isKey("blob"));
+
+  uint8_t out = 0;
+  size_t len = 123;
+  EXPECT_EQ(ReadResult::kNotFound,
+            t.store().readBytes("blob", &out, sizeof(out), &len));
 }
 
 TEST(PrefsTest, NestedTransactions) {

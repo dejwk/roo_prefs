@@ -75,7 +75,10 @@ LazyWritePref<T>::LazyWritePref(Collection& collection,
     : pref_(collection, key, std::move(default_value)),
       stable_write_latency_s_(stable_write_latency_s),
       unstable_write_latency_s_(unstable_write_latency_s),
-      flusher_(scheduler, [this]() { maybeFlush(); }) {
+      pending_write_(),
+      flusher_(scheduler, [this]() { maybeFlush(); }),
+      last_write_ms_(0),
+      last_change_ms_(0) {
   if (unstable_write_latency_s_ < stable_write_latency_s_) {
     unstable_write_latency_s_ = stable_write_latency_s_;
   }
@@ -93,12 +96,16 @@ const T& LazyWritePref<T>::get() const {
 
 template <typename T>
 bool LazyWritePref<T>::set(const T& value) {
-  if (pending_write_ == value) return true;
-  pending_write_ = value;
-  last_change_ms_ = roo_time::Uptime::Now().inMillis();
-  if (!has_pending_write()) {
+  uint32_t now = roo_time::Uptime::Now().inMillis();
+  if (has_pending_write()) {
+    if (pending_write_ == value) return true;
+  } else {
+    if (pref_.get() == value) return true;
+    last_write_ms_ = now;
     flusher_.scheduleAfter(roo_time::Seconds(stable_write_latency_s_));
   }
+  pending_write_ = value;
+  last_change_ms_ = now;
   return true;
 }
 
@@ -121,7 +128,13 @@ void LazyWritePref<T>::maybeFlush() {
 
 template <typename T>
 bool LazyWritePref<T>::clear() {
-  return pref_.clear();
+  if (!pref_.clear()) return false;
+  flusher_.cancel();
+  pending_write_ = pref_.get();
+  uint32_t now = roo_time::Uptime::Now().inMillis();
+  last_write_ms_ = now;
+  last_change_ms_ = now;
+  return true;
 }
 
 }  // namespace roo_prefs
