@@ -1,12 +1,6 @@
 # Programming guide
 
-> This guide is written as practical documentation and is organized from the
-> most common application-level use cases toward extension and maintenance
-> topics.
-
-## Before you start
-
-### What problem does roo_prefs solve?
+## When to use this library?
 
 `roo_prefs` is a small wrapper around the Arduino `Preferences` library. Use it
 for application or library settings that must survive resets: WiFi credentials,
@@ -80,34 +74,6 @@ On ESP32, the underlying NVS implementation keeps names short. In practice,
 keep collection names and keys compact, ASCII-only, and no more than 15
 characters.
 
-### Text preferences
-
-Use `roo_prefs::String` when the stored text value should be exposed as
-`std::string`:
-
-```cpp
-roo_prefs::Collection prefs("network");
-roo_prefs::String wifi_ssid(prefs, "ssid", "pool");
-
-wifi_ssid.set("literal");
-wifi_ssid.set(std::string("owned string"));
-wifi_ssid.set(roo::string_view("view string"));
-
-const std::string& value = wifi_ssid.get();
-```
-
-For `roo_prefs::String`, `set()` accepts `std::string`, string literals,
-`const char*`, and `roo::string_view` directly.
-
-On Arduino builds, `roo_prefs::ArduinoString` is also available when you want
-the preference to expose Arduino `::String` directly:
-
-```cpp
-#ifdef ARDUINO
-roo_prefs::ArduinoString wifi_label(prefs, "label", ::String("pool"));
-#endif
-```
-
 ## Typed preferences
 
 ### Common aliases
@@ -128,11 +94,6 @@ roo_prefs::String label(prefs, "label");
 roo_prefs::ArduinoString arduino_label(prefs, "ard_label");
 #endif
 ```
-
-The full set is `Bool`, `Uint8`, `Int8`, `Uint16`, `Int16`, `Uint32`, `Int32`,
-`Uint64`, `Int64`, `Float`, `Double`, and `String`. On Arduino,
-`ArduinoString` is also available. For anything else, use `roo_prefs::Pref<T>`
-directly.
 
 ### Defaults and `isSet()`
 
@@ -183,6 +144,34 @@ Serial.println(target_pool_temp.get());    // 28.0
 
 Check the boolean return value of `set()` and `clear()` whenever the setting is
 important for correct operation.
+
+### Text preferences
+
+Use `roo_prefs::String` when the stored text value should be exposed as
+`std::string`:
+
+```cpp
+roo_prefs::Collection prefs("network");
+roo_prefs::String wifi_ssid(prefs, "ssid", "pool");
+
+wifi_ssid.set("literal");
+wifi_ssid.set(std::string("owned string"));
+wifi_ssid.set(roo::string_view("view string"));
+
+const std::string& value = wifi_ssid.get();
+```
+
+For `roo_prefs::String`, `set()` accepts `std::string`, string literals,
+`const char*`, and `roo::string_view` directly.
+
+On Arduino builds, `roo_prefs::ArduinoString` is also available when you want
+the preference to expose Arduino `::String` directly:
+
+```cpp
+#ifdef ARDUINO
+roo_prefs::ArduinoString wifi_label(prefs, "label", ::String("pool"));
+#endif
+```
 
 ### Transactions
 
@@ -325,10 +314,6 @@ Use plain `Pref<T>` for values that must be persisted immediately before the
 program continues, such as credentials accepted from a setup portal. A lazy
 preference can lose the most recent update if power is removed before the
 scheduled write runs.
-
-The predefined lazy aliases are `LazyBool`, `LazyUint8`, `LazyInt8`,
-`LazyUint16`, `LazyInt16`, `LazyUint32`, `LazyInt32`, `LazyUint64`, `LazyInt64`,
-`LazyFloat`, and `LazyDouble`.
 
 ## Design patterns
 
