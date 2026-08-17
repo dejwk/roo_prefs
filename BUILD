@@ -44,7 +44,6 @@ cc_test(
         "test/arduino_string_pref_test.cpp",
     ],
     copts = ["-Iexternal/gtest/include"],
-    defines = ["ARDUINO=10805"],
     includes = ["src"],
     linkstatic = 1,
     deps = [
