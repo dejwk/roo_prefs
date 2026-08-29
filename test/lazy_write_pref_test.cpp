@@ -8,7 +8,6 @@
 
 namespace roo_prefs {
 TEST(LazyWritePrefTest, BasicOperations) {
-  system_time_set_auto_sync(false);
   Collection col("foo");
   roo_scheduler::Scheduler scheduler;
   LazyUint32 lazy(col, scheduler, "u32");
@@ -61,7 +60,6 @@ TEST(LazyWritePrefTest, BasicOperations) {
 }
 
 TEST(LazyWritePrefTest, ClearCancelsPendingWrite) {
-  system_time_set_auto_sync(false);
   Collection col("lazy_clear");
   roo_scheduler::Scheduler scheduler;
   LazyUint32 lazy(col, scheduler, "clear_key");
@@ -87,7 +85,6 @@ TEST(LazyWritePrefTest, ClearCancelsPendingWrite) {
 }
 
 TEST(LazyWritePrefTest, ConstructionDoesNotTouchStorage) {
-  system_time_set_auto_sync(false);
   Collection col("lazy_ctor");
   roo_scheduler::Scheduler scheduler;
   LazyUint32 lazy(col, scheduler, "ctor_key");
@@ -102,7 +99,6 @@ TEST(LazyWritePrefTest, ConstructionDoesNotTouchStorage) {
 }
 
 TEST(LazyWritePrefTest, FirstSetDoesNotDependOnPoisonedStorage) {
-  system_time_set_auto_sync(false);
   Collection col("lazy_poison");
   roo_scheduler::Scheduler scheduler;
   constexpr uint32_t kPoisonValue = 0xA5A5A5A5u;

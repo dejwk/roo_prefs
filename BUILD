@@ -64,5 +64,6 @@ cc_test(
     deps = [
         ":roo_prefs",
         "@roo_testing//:arduino_gtest_main",
+        "@roo_testing//roo_testing/system:manual_time_mode",
     ],
 )
