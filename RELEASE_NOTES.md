@@ -1,3 +1,12 @@
+# roo_prefs 1.3.2
+
+- Updated Roo dependencies to `roo_backport` 1.2.4, `roo_logging` 1.5.10, and `roo_scheduler` 2.2.0 in Bazel and PlatformIO.
+- Updated Bazel tooling to `rules_cc` 0.2.25, GoogleTest 1.18.0.bcr.1, and `roo_testing` 2.1.2.
+- Updated the shared GitHub Actions CI workflow to `roo_testing` 2.1.2.
+- Added consolidated release notes for previous releases.
+
+---
+
 # [roo_prefs 1.3.1](https://github.com/dejwk/roo_prefs/releases/tag/1.3.1)
 
 Published 2026-08-29.
