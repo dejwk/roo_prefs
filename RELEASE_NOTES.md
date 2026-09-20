@@ -1,3 +1,13 @@
+# roo_prefs 1.4.0
+
+- Added native ESP-IDF support with a direct NVS backend; Arduino is no longer required on ESP32.
+- Preserved compatibility with existing on-flash values while retaining Arduino `Preferences` support on non-ESP32 targets.
+- Added ESP-IDF Bazel configuration, tests, documentation, and a device-settings example.
+- Updated `roo_testing` from 2.1.2 to 2.1.3 and removed the redundant direct `googletest` dependency.
+- Native ESP-IDF applications must initialize the default NVS partition before using `roo_prefs`.
+
+---
+
 # roo_prefs 1.3.2
 
 - Updated Roo dependencies to `roo_backport` 1.2.4, `roo_logging` 1.5.10, and `roo_scheduler` 2.2.0 in Bazel and PlatformIO.
