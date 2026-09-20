@@ -51,10 +51,14 @@ The core tests also run without the Arduino frontend:
     bazel test //:prefs_test //:lazy_write_pref_test \
         --config=roo_testing_idf_esp32
 
+The native ESP-IDF example initializes NVS before accessing its preferences:
+
+    bazel run --config=roo_testing_idf_esp32 //examples/esp_idf/device_settings
+
 The files under .roo_testing/bazelrc/esp32 are vendored from roo_testing;
 follow their canonical-source headers when refreshing them.
 
 Arduino examples are native runnable targets in their source packages. For
 example:
 
-    bazel run //examples/Basic:Basic
+    bazel run //examples/Basic
