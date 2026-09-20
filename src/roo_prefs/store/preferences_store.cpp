@@ -1,5 +1,7 @@
 #include "roo_prefs/store/preferences_store.h"
 
+#if !ROO_PREFS_USE_ESP32_NVS
+
 namespace roo_prefs {
 
 namespace {
@@ -329,3 +331,5 @@ ReadResult PreferencesStore::readBytesLength(const char* key, size_t* out_len) {
 }
 
 }  // namespace roo_prefs
+
+#endif  // !ROO_PREFS_USE_ESP32_NVS

@@ -1,6 +1,6 @@
 {
     "name": "roo_prefs",
-    "description": "ESP32 'Preferences' utility library for management of persistent settings, avoiding name clashes by using namespaces and transactions.",
+    "description": "Utility library for persistent settings using ESP32 NVS or Arduino Preferences, with namespaces and transactions.",
     "keywords": "preferences peristent options",
     "authors": [
         {

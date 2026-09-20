@@ -4,9 +4,16 @@ Store configuration options and preferences, such as WiFi passwords, temperature
 
 Make your libraries configurable, without interfering with other libraries that may also be using persistent storage.
 
-Uses Arduino Preferences lib under the hood.
+On ESP32, uses the ESP-IDF NVS API directly. The same storage backend works
+with both Arduino-ESP32 and native ESP-IDF; Arduino is only needed for optional
+`ArduinoString` accessors. On other Arduino boards, the library uses the
+platform's `Preferences` library when a compatible implementation is
+available.
 
-Written for and tested with ESP32 family of microcontrollers, but should be easily portable to anything that uses standard C++.
+Written for and tested with the ESP32 family of microcontrollers. It also
+supports non-ESP32 Arduino targets that provide a compatible `Preferences`
+library, and its storage boundary is small enough to port to other C++
+platforms.
 
 For a complete walkthrough, see the [programming guide](doc/programming_guide.md).
 
@@ -38,6 +45,11 @@ or newer, a plain command defaults to that profile and prints a notice:
     bazel test ...
     bazel test ... --config=asan
     bazel test ... --config=roo_testing_arduino_esp32
+
+The core tests also run without the Arduino frontend:
+
+    bazel test //:prefs_test //:lazy_write_pref_test \
+        --config=roo_testing_idf_esp32
 
 The files under .roo_testing/bazelrc/esp32 are vendored from roo_testing;
 follow their canonical-source headers when refreshing them.

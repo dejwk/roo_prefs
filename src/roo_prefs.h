@@ -21,8 +21,8 @@
 /// }
 /// @endcode
 ///
-/// In the snippet above, `Preferences::begin()` / `Preferences::end()` are
-/// called automatically by transaction constructor/destructor.
+/// In the snippet above, the NVS namespace handle is opened and closed
+/// automatically by the transaction constructor/destructor.
 ///
 /// If you want in-memory caching, prefer typed `Pref` classes over direct
 /// transactions.

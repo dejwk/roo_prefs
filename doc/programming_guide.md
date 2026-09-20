@@ -2,17 +2,20 @@
 
 ## Purpose
 
-`roo_prefs` is a small wrapper around the Arduino `Preferences` library. Use it
-for application or library settings that must survive resets: WiFi credentials,
-thresholds, user choices, calibration constants, counters, timers, and similar
-small values. It works with Arduino and esp-idf.
+`roo_prefs` is a small typed wrapper around persistent key-value storage. On
+ESP32 it uses non-volatile storage (NVS) directly and works with both
+Arduino-ESP32 and native ESP-IDF. On other Arduino boards it uses the
+platform's `Preferences` library when a compatible implementation is
+available. Use it for application or library settings that must survive
+resets: WiFi credentials, thresholds, user choices, calibration constants,
+counters, timers, and similar small values.
 
-The library adds three conveniences on top of Arduino `Preferences`:
+The library adds three conveniences on top of NVS:
 
 * Namespaced collections, so independent modules can persist data without
   stepping on each other.
-* RAII transactions, so `Preferences::begin()` and `Preferences::end()` stay
-  paired automatically, including in nested helper code.
+* RAII transactions, so NVS namespace handles are opened and closed
+  automatically, including in nested helper code.
 * Typed preference objects, which read lazily, cache the value in RAM, and
   expose a small `get()` / `set()` / `clear()` API.
 
@@ -46,6 +49,20 @@ There is no separate `begin()` call. The first read or write opens the
 underlying namespace, performs the operation, and closes it again. The value is
 then cached in the `Pref` object, so repeated `get()` calls are cheap.
 
+On ESP32, the application must initialize the default NVS partition before
+using the library. Arduino-ESP32 does this during framework startup. A native
+ESP-IDF application normally does it in `app_main()`:
+
+```cpp
+#include "nvs_flash.h"
+
+ESP_ERROR_CHECK(nvs_flash_init());
+```
+
+Initialization recovery, such as deciding whether to erase a partition after
+`ESP_ERR_NVS_NO_FREE_PAGES`, remains an application policy; `roo_prefs` never
+erases a partition automatically.
+
 Prefer declaring collections and preferences statically or globally. The
 collection must outlive every preference that refers to it, and collection
 names and keys should be stable string literals or other storage with static
@@ -53,7 +70,7 @@ lifetime.
 
 ### Collections and keys
 
-A `roo_prefs::Collection` corresponds to one Arduino `Preferences` namespace:
+A `roo_prefs::Collection` corresponds to one NVS namespace:
 
 ```cpp
 roo_prefs::Collection network_prefs("network");
@@ -211,10 +228,10 @@ transaction support.
 Use `Transaction(prefs, roo_prefs::Transaction::Mode::kReadOnly)` if you only need
 to read the preferences. For writes, you can skip the parameter: `Transaction(prefs)`.
 
-`roo_prefs::Transaction` is a scoped guard around `Preferences::begin()` and
-`Preferences::end()`. Transactions are reference-counted and reentrant. If the collection
-is already open, inner `get()`, `set()`, and `clear()` calls reuse it automatically. That
-makes helper functions easy to compose:
+`roo_prefs::Transaction` is a scoped guard around opening and closing an NVS
+namespace handle. Transactions are reference-counted and reentrant. If the
+collection is already open, inner `get()`, `set()`, and `clear()` calls reuse it
+automatically. That makes helper functions easy to compose:
 
 ```cpp
 roo_prefs::Int32 setting_a(prefs, "a");
@@ -269,8 +286,8 @@ but it also means you must be careful:
 * For text, use `roo_prefs::String`, or `roo_prefs::ArduinoString` on Arduino,
   instead of treating text as a generic object blob.
 * Low-level blob writes through `Transaction::store().writeBytes()` cannot
-  represent empty payloads, because Arduino `Preferences` rejects zero-length
-  BLOB writes.
+  represent empty payloads. This preserves compatibility with the previous
+  Arduino `Preferences` backend and its existing on-flash representation.
 * Keep the struct layout stable across firmware versions, or write an explicit
   migration.
 * Provide `operator==`, because `Pref<T>::set()` uses equality to skip

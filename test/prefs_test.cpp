@@ -2,6 +2,12 @@
 
 #include "gtest/gtest.h"
 #include "roo_prefs.h"
+#include "roo_prefs/store/platform.h"
+
+#if ROO_PREFS_USE_ESP32_NVS
+#include <esp_idf_version.h>
+#include <nvs.h>
+#endif
 
 namespace roo_prefs {
 TEST(PrefsTest, SampleTest) {
@@ -199,6 +205,59 @@ TEST(PrefsTest, EmptyStringRoundTrip) {
   EXPECT_TRUE(pref_reader.isSet());
   EXPECT_EQ("", pref_reader.get());
 }
+
+#if ROO_PREFS_USE_ESP32_NVS
+
+TEST(PrefsTest, PreservesPreferencesStringStorageFormat) {
+  Collection col("str_format");
+  roo_prefs::String pref(col, "value");
+
+  ASSERT_TRUE(pref.set("non-empty"));
+  nvs_handle_t handle;
+  ASSERT_EQ(ESP_OK, nvs_open("str_format", NVS_READONLY, &handle));
+  size_t size = 0;
+  EXPECT_EQ(ESP_OK, nvs_get_blob(handle, "value", nullptr, &size));
+  EXPECT_EQ(9u, size);
+  EXPECT_EQ(ESP_ERR_NVS_TYPE_MISMATCH,
+            nvs_get_str(handle, "value", nullptr, &size));
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
+  nvs_type_t type;
+  EXPECT_EQ(ESP_OK, nvs_find_key(handle, "value", &type));
+  EXPECT_EQ(NVS_TYPE_BLOB, type);
+#endif
+  nvs_close(handle);
+
+  ASSERT_TRUE(pref.set(""));
+  ASSERT_EQ(ESP_OK, nvs_open("str_format", NVS_READONLY, &handle));
+  size = 0;
+  EXPECT_EQ(ESP_OK, nvs_get_str(handle, "value", nullptr, &size));
+  EXPECT_EQ(1u, size);
+  EXPECT_EQ(ESP_ERR_NVS_TYPE_MISMATCH,
+            nvs_get_blob(handle, "value", nullptr, &size));
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
+  EXPECT_EQ(ESP_OK, nvs_find_key(handle, "value", &type));
+  EXPECT_EQ(NVS_TYPE_STR, type);
+#endif
+  nvs_close(handle);
+
+  EXPECT_TRUE(pref.clear());
+}
+
+TEST(PrefsTest, ReadsStringsWrittenByNvsStringApi) {
+  nvs_handle_t handle;
+  ASSERT_EQ(ESP_OK, nvs_open("nvs_string", NVS_READWRITE, &handle));
+  ASSERT_EQ(ESP_OK, nvs_set_str(handle, "value", "native string"));
+  ASSERT_EQ(ESP_OK, nvs_commit(handle));
+  nvs_close(handle);
+
+  Collection col("nvs_string");
+  roo_prefs::String pref(col, "value");
+  EXPECT_TRUE(pref.isSet());
+  EXPECT_EQ("native string", pref.get());
+  EXPECT_TRUE(pref.clear());
+}
+
+#endif  // ROO_PREFS_USE_ESP32_NVS
 
 TEST(PrefsTest, Struct) {
   struct MyStruct {

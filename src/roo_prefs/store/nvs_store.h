@@ -4,32 +4,27 @@
 
 #if ROO_PREFS_USE_ESP32_NVS
 
-#include "roo_prefs/store/nvs_store.h"
+#include <nvs.h>
 
-namespace roo_prefs {
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
-// Backward-compatible name for code that included this low-level store
-// directly. ESP32 builds use ESP-IDF NVS and do not require Arduino.
-using PreferencesStore = NvsStore;
-
-}  // namespace roo_prefs
-
-#else
-
-#include <memory>
-
-#include "Preferences.h"
-#include "roo_backport.h"
 #include "roo_backport/string_view.h"
 #include "roo_prefs/status.h"
 
 namespace roo_prefs {
 
-/// Low-level wrapper around the underlying preferences storage.
-class PreferencesStore {
+/// Low-level preferences storage backed directly by ESP-IDF NVS.
+class NvsStore {
  public:
-  bool isKey(const char* key);
+  NvsStore() = default;
+  ~NvsStore();
 
+  NvsStore(const NvsStore&) = delete;
+  NvsStore& operator=(const NvsStore&) = delete;
+
+  bool isKey(const char* key);
   ClearResult clear(const char* key);
 
   template <typename T>
@@ -38,33 +33,20 @@ class PreferencesStore {
   }
 
   WriteResult writeBool(const char* key, bool val);
-
   WriteResult writeU8(const char* key, uint8_t val);
-
   WriteResult writeI8(const char* key, int8_t val);
-
   WriteResult writeU16(const char* key, uint16_t val);
-
   WriteResult writeI16(const char* key, int16_t val);
-
   WriteResult writeU32(const char* key, uint32_t val);
-
   WriteResult writeI32(const char* key, int32_t val);
-
   WriteResult writeU64(const char* key, uint64_t val);
-
   WriteResult writeI64(const char* key, int64_t val);
-
   WriteResult writeFloat(const char* key, float val);
-
   WriteResult writeDouble(const char* key, double val);
-
   WriteResult writeString(const char* key, roo::string_view val);
 
-  /// Stores a raw byte blob.
-  ///
-  /// Empty blobs are unsupported because the underlying Arduino
-  /// `Preferences::putBytes()` API rejects zero-length writes.
+  /// Stores a raw byte blob. Empty blobs remain unsupported for compatibility
+  /// with the previous Arduino Preferences backend.
   WriteResult writeBytes(const char* key, const void* val, size_t len);
 
   template <typename T>
@@ -73,32 +55,19 @@ class PreferencesStore {
   }
 
   ReadResult readBool(const char* key, bool& val);
-
   ReadResult readU8(const char* key, uint8_t& val);
-
   ReadResult readI8(const char* key, int8_t& val);
-
   ReadResult readU16(const char* key, uint16_t& val);
-
   ReadResult readI16(const char* key, int16_t& val);
-
   ReadResult readU32(const char* key, uint32_t& val);
-
   ReadResult readI32(const char* key, int32_t& val);
-
   ReadResult readU64(const char* key, uint64_t& val);
-
   ReadResult readI64(const char* key, int64_t& val);
-
   ReadResult readFloat(const char* key, float& val);
-
   ReadResult readDouble(const char* key, double& val);
-
   ReadResult readString(const char* key, std::string& val);
-
   ReadResult readBytes(const char* key, void* val, size_t max_len,
                        size_t* out_len);
-
   ReadResult readBytesLength(const char* key, size_t* out_len);
 
  private:
@@ -109,10 +78,10 @@ class PreferencesStore {
 
   WriteResult writeObjectInternal(const char* key, const void* val,
                                   size_t size);
-
   ReadResult readObjectInternal(const char* key, void* val, size_t size);
 
-  Preferences prefs_;
+  nvs_handle_t handle_ = 0;
+  bool open_ = false;
 };
 
 }  // namespace roo_prefs
