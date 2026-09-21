@@ -9,6 +9,7 @@ cc_library(
             "src/**/*.cpp",
         ],
         exclude = [
+            "src/roo_prefs/lazy_write_pref.h",
             "src/roo_prefs/store/filesystem_store.h",
             "src/roo_prefs/store/filesystem_store.ipp",
             "test/**",
@@ -21,7 +22,6 @@ cc_library(
     deps = [
         "@roo_backport",
         "@roo_logging",
-        "@roo_scheduler",
     ] + select({
         "@roo_testing//roo_testing/platforms:is_esp_idf": [
             "@roo_testing//roo_testing/frameworks/esp-idf:headers",
@@ -31,6 +31,15 @@ cc_library(
             "@roo_testing//roo_testing/frameworks/arduino-esp32/libraries/Preferences",
         ],
     }),
+)
+
+# Optional lazy-write API. Users must also depend directly on roo_scheduler.
+cc_library(
+    name = "lazy_write_pref",
+    hdrs = ["src/roo_prefs/lazy_write_pref.h"],
+    includes = ["src"],
+    visibility = ["//visibility:public"],
+    deps = [":roo_prefs"],
 )
 
 cc_library(
@@ -103,7 +112,8 @@ cc_test(
     includes = ["src"],
     linkstatic = 1,
     deps = [
-        ":roo_prefs",
+        ":lazy_write_pref",
+        "@roo_scheduler",
         "@roo_testing//roo_testing/system:manual_time_mode",
     ] + select({
         "@roo_testing//roo_testing/platforms:is_idf": ["@roo_testing//:esp_idf_gtest_main"],
