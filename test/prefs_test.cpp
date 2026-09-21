@@ -13,6 +13,17 @@
 #endif
 
 namespace roo_prefs {
+TEST(PrefsTest, SupportsInjectedStore) {
+  PreferencesStore store;
+  Collection col("injected", store);
+  Int16 pref(col, "value");
+
+  EXPECT_FALSE(pref.isSet());
+  EXPECT_TRUE(pref.set(42));
+  EXPECT_EQ(42, pref.get());
+  EXPECT_TRUE(pref.clear());
+}
+
 TEST(PrefsTest, SampleTest) {
   Collection col("foo");
   roo_prefs::Int16 pref1(col, "pref1");

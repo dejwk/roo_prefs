@@ -4,15 +4,13 @@
 
 #include <string>
 
-#include "roo_prefs/store/preferences_store.h"
+#include "roo_prefs/store/store.h"
 
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
 
 namespace roo_prefs {
-
-using Store = PreferencesStore;
 
 inline ClearResult StoreClear(Store& store, const char* key) {
   return store.clear(key);

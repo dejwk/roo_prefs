@@ -12,7 +12,7 @@ class Transaction {
 
   Transaction(Collection& collection, Mode mode = Mode::kReadWrite)
       : collection_(collection) {
-    active_ = collection_.inc(mode == Mode::kReadOnly);
+    begin_result_ = collection_.inc(mode == Mode::kReadOnly);
   }
 
   [[deprecated("Use Transaction(Collection&, Transaction::Mode) instead")]]
@@ -21,16 +21,18 @@ class Transaction {
                     read_only ? Mode::kReadOnly : Mode::kReadWrite) {}
 
   ~Transaction() {
-    if (active_) collection_.dec();
+    if (active()) collection_.dec();
   }
 
-  bool active() const { return active_; }
+  bool active() const { return begin_result_ == Store::BeginResult::kOk; }
 
-  Store& store() { return collection_.store_; }
+  Store::BeginResult beginResult() const { return begin_result_; }
+
+  Store& store() { return *collection_.store_; }
 
  private:
   Collection& collection_;
-  bool active_;
+  Store::BeginResult begin_result_;
 };
 
 }  // namespace roo_prefs

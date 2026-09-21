@@ -28,8 +28,10 @@ ReadResult ReadStoredString(Preferences& prefs, const char* key,
 
 }  // namespace
 
-bool PreferencesStore::begin(const char* collection_name, bool read_only) {
-  return prefs_.begin(collection_name, read_only);
+Store::BeginResult PreferencesStore::begin(const char* collection_name,
+                                           bool read_only) {
+  if (prefs_.begin(collection_name, read_only)) return BeginResult::kOk;
+  return read_only ? BeginResult::kNotFound : BeginResult::kError;
 }
 
 void PreferencesStore::end() { prefs_.end(); }

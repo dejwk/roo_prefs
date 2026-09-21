@@ -172,8 +172,12 @@ void Pref<T>::sync() const {
   if (state_ == PrefState::kUnknown || state_ == PrefState::kError) {
     Transaction t(collection_, Transaction::Mode::kReadOnly);
     if (!t.active()) {
-      state_ = PrefState::kUnset;
-      value_.set(default_value_);
+      if (t.beginResult() == Store::BeginResult::kNotFound) {
+        state_ = PrefState::kUnset;
+        value_.set(default_value_);
+      } else {
+        state_ = PrefState::kError;
+      }
       return;
     }
     switch (StoreRead(t.store(), key_, value_.get())) {

@@ -68,14 +68,17 @@ bool HasAnyType(nvs_handle_t handle, const char* key) {
 
 NvsStore::~NvsStore() { end(); }
 
-bool NvsStore::begin(const char* collection_name, bool read_only) {
-  if (open_) return false;
-  if (nvs_open(collection_name, read_only ? NVS_READONLY : NVS_READWRITE,
-               &handle_) != ESP_OK) {
-    return false;
+Store::BeginResult NvsStore::begin(const char* collection_name,
+                                   bool read_only) {
+  if (open_) return BeginResult::kError;
+  esp_err_t result = nvs_open(
+      collection_name, read_only ? NVS_READONLY : NVS_READWRITE, &handle_);
+  if (result == ESP_ERR_NVS_NOT_FOUND && read_only) {
+    return BeginResult::kNotFound;
   }
+  if (result != ESP_OK) return BeginResult::kError;
   open_ = true;
-  return true;
+  return BeginResult::kOk;
 }
 
 void NvsStore::end() {

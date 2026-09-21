@@ -5,19 +5,32 @@
 
 #include "roo_logging.h"
 #include "roo_prefs/store/preferences_store.h"
+#include "roo_prefs/store/store.h"
 
 namespace roo_prefs {
 
 class Transaction;
-
-using Store = PreferencesStore;
 
 /// Collection corresponds to a preferences namespace. Use it to group related
 /// preferences.
 class Collection {
  public:
   Collection(const char* name)
-      : store_(), name_(name), refcount_(0), read_only_(true) {}
+      : default_store_(),
+        store_(&default_store_),
+        name_(name),
+        refcount_(0),
+        read_only_(true) {}
+
+  /// Creates a collection backed by the specified store. The store must
+  /// outlive this collection and must not be attached to another collection
+  /// concurrently.
+  Collection(const char* name, Store& store)
+      : default_store_(),
+        store_(&store),
+        name_(name),
+        refcount_(0),
+        read_only_(true) {}
 
   bool inTransaction() const { return refcount_ > 0; }
 
@@ -29,7 +42,7 @@ class Collection {
   template <typename Visitor>
   EnumerateResult forEachKey(Visitor&& visitor) const {
     using VisitorType = typename std::remove_reference<Visitor>::type;
-    return store_.enumerateKeys(
+    return store_->enumerateKeys(
         name_,
         [](void* context, roo::string_view key) {
           return static_cast<bool>((*static_cast<VisitorType*>(context))(key));
@@ -40,9 +53,11 @@ class Collection {
  private:
   friend class Transaction;
 
-  bool inc(bool read_only) {
+  Store::BeginResult inc(bool read_only) {
     if (refcount_ == 0) {
-      if (!store_.begin(name_, read_only)) {
+      Store::BeginResult result = store_->begin(name_, read_only);
+      if (result != Store::BeginResult::kOk) {
+        if (result == Store::BeginResult::kNotFound) return result;
         if (read_only) {
           LOG(WARNING) << "Failed to initialize preferences " << name_
                        << " for reading";
@@ -50,24 +65,25 @@ class Collection {
           LOG(ERROR) << "Failed to initialize preferences " << name_
                      << " for writing";
         }
-        return false;
+        return result;
       }
       read_only_ = read_only;
       ++refcount_;
-      return true;
+      return Store::BeginResult::kOk;
     }
-    if (read_only_ && !read_only) return false;
+    if (read_only_ && !read_only) return Store::BeginResult::kError;
     ++refcount_;
-    return true;
+    return Store::BeginResult::kOk;
   }
 
   void dec() {
     if (--refcount_ == 0) {
-      store_.end();
+      store_->end();
     }
   }
 
-  Store store_;
+  PreferencesStore default_store_;
+  Store* store_;
   const char* name_;
   int refcount_;
   bool read_only_;
