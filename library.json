@@ -26,6 +26,5 @@
     "dependencies": {
         "dejwk/roo_backport": ">=1.2.4",
         "dejwk/roo_logging": ">=1.5.10",
-        "dejwk/roo_scheduler": ">=2.2.0"
     }
 }

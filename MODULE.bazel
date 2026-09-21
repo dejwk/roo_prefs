@@ -10,4 +10,4 @@ bazel_dep(name = "roo_logging", version = "1.5.10")
 bazel_dep(name = "roo_scheduler", version = "2.2.0", dev_dependency = True)
 
 # Optional, for persisting in a filesystem (e.g. LittleFS/flash, or FAT/SD).
-bazel_dep(name = "roo_io", version = "2.3.0", dev_dependency = True)
+bazel_dep(name = "roo_io", version = "2.3.1", dev_dependency = True)
