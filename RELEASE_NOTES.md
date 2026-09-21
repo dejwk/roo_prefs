@@ -1,3 +1,10 @@
+# roo_prefs 2.0.1
+
+- Made `roo_scheduler` optional for core `roo_prefs` consumers.
+- Added a dedicated Bazel `:lazy_write_pref` target; applications using lazy-write preferences must now provide `roo_scheduler` directly.
+
+---
+
 # roo_prefs 2.0.0
 
 - Added preference-key enumeration and injectable storage backends.
