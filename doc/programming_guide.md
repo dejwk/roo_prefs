@@ -68,6 +68,50 @@ collection must outlive every preference that refers to it, and collection
 names and keys should be stable string literals or other storage with static
 lifetime.
 
+### Filesystem-backed collections
+
+The optional `FilesystemStore` backend places preferences in a
+`roo_io::Filesystem` rather than the platform's default preferences storage.
+Include it explicitly and inject it into a collection:
+
+```cpp
+#include "roo_prefs.h"
+#include "roo_prefs/store/filesystem_store.h"
+
+roo_io::Filesystem& filesystem = GetApplicationFilesystem();
+roo_prefs::FilesystemStore store(filesystem, "/prefs");
+roo_prefs::Collection prefs("main", store);
+
+roo_prefs::String device_name(prefs, "name", "unnamed");
+```
+
+The filesystem and store must both outlive the collection. A store instance
+must not be attached to multiple collections concurrently. Transactions retain
+a filesystem mount for their duration and respect read-only mounts.
+
+Collection and key names are hex-encoded before being used as paths, so names
+containing spaces or path separators cannot escape the configured root. Each
+key file contains a version, type tag, payload length, CRC32, and payload.
+Scalar values use a stable little-endian representation; arbitrary objects
+remain ABI-dependent blobs, just as they are with the default backend.
+
+When a value changes, the backend writes and closes a staging file before
+renaming it over the old key file. It also compares the existing value first
+and skips an unchanged write. Atomic visibility and power-loss recovery depend
+on `roo_io::Mount::rename()` providing atomic replacement semantics for the
+selected backend. LittleFS and same-filesystem POSIX rename provide this;
+backends that emulate replacement with remove-then-rename do not.
+
+This is per-key atomicity only. `roo_prefs::Transaction` keeps the store open
+and supports nested access, but it does not commit several preference writes
+as one atomic unit.
+
+The filesystem adapter is header-only so it remains optional in Arduino and
+PlatformIO packages. Those users must install `roo_io` explicitly and include
+`roo_prefs/store/filesystem_store.h`; the ordinary `roo_prefs.h` header does
+not pull it in. Bazel users should depend on `//:filesystem_store` instead of
+adding `roo_io` to consumers of the core `//:roo_prefs` target.
+
 ### Collections and keys
 
 A `roo_prefs::Collection` corresponds to one NVS namespace:

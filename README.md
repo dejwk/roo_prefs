@@ -1,6 +1,8 @@
 # roo_prefs
 
-Store configuration options and preferences, such as WiFi passwords, temperature thresholds, alarm timers, etc., persistently, but without hard-coding them in your program, and without using external storage.
+Store configuration options and preferences, such as WiFi passwords,
+temperature thresholds, and alarm timers, persistently without hard-coding
+them in your program.
 
 Make your libraries configurable, without interfering with other libraries that may also be using persistent storage.
 
@@ -36,6 +38,29 @@ const std::string& GetWiFiPassword() {
   return wifi_password.get();
 }
 ```
+
+## Optional filesystem backend
+
+`roo_prefs::FilesystemStore` stores preferences in any writable
+`roo_io::Filesystem`. It is opt-in and is not included by `roo_prefs.h`:
+
+```cpp
+#include "roo_prefs.h"
+#include "roo_prefs/store/filesystem_store.h"
+
+roo_prefs::FilesystemStore filesystem_store(filesystem, "/prefs");
+roo_prefs::Collection prefs("my_lib", filesystem_store);
+```
+
+The store must outlive the collection. Each key is a typed, checksummed file;
+updates use a staging file followed by `roo_io::Mount::rename()`. Power-loss
+atomicity requires a backend with atomic replacement semantics, such as
+LittleFS or POSIX on a single filesystem.
+
+The core Arduino and PlatformIO packages deliberately do not declare `roo_io`
+as a dependency. Install/add `roo_io` explicitly when using this backend. With
+Bazel, depend on `//:filesystem_store`; the ordinary `//:roo_prefs` target does
+not link `roo_io`.
 
 ## Host emulation
 
