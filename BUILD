@@ -8,7 +8,11 @@ cc_library(
             "src/**/*.h",
             "src/**/*.cpp",
         ],
-        exclude = ["test/**"],
+        exclude = [
+            "src/roo_prefs/store/filesystem_store.h",
+            "src/roo_prefs/store/filesystem_store.ipp",
+            "test/**",
+        ],
     ),
     includes = [
         "src",
@@ -26,6 +30,36 @@ cc_library(
         "//conditions:default": [
             "@roo_testing//roo_testing/frameworks/arduino-esp32/libraries/Preferences",
         ],
+    }),
+)
+
+cc_library(
+    name = "filesystem_store",
+    hdrs = [
+        "src/roo_prefs/store/filesystem_store.h",
+        "src/roo_prefs/store/filesystem_store.ipp",
+    ],
+    includes = ["src"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":roo_prefs",
+        "@roo_io",
+    ],
+)
+
+cc_test(
+    name = "filesystem_store_test",
+    size = "small",
+    srcs = ["test/filesystem_store_test.cpp"],
+    target_compatible_with = [
+        "@roo_testing//roo_testing/platforms:arduino",
+    ],
+    deps = [
+        ":filesystem_store",
+        "@roo_io//test/fs:fakefs",
+    ] + select({
+        "@roo_testing//roo_testing/platforms:is_idf": ["@roo_testing//:esp_idf_gtest_main"],
+        "//conditions:default": ["@roo_testing//:arduino_gtest_main"],
     }),
 )
 
@@ -67,8 +101,8 @@ cc_test(
     name = "lazy_write_pref_test",
     size = "small",
     srcs = [
-        "test/nvs_test_environment.cpp",
         "test/lazy_write_pref_test.cpp",
+        "test/nvs_test_environment.cpp",
     ],
     includes = ["src"],
     linkstatic = 1,
