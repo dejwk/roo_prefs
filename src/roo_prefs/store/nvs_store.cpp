@@ -85,6 +85,58 @@ void NvsStore::end() {
   open_ = false;
 }
 
+EnumerateResult NvsStore::enumerateKeys(const char* collection_name,
+                                        KeyVisitor visitor,
+                                        void* context) const {
+  if (collection_name == nullptr || visitor == nullptr) {
+    return EnumerateResult::kError;
+  }
+
+  // Verify the namespace separately so ESP-IDF 4.x can distinguish an absent
+  // namespace (an empty result) from a storage initialization failure.
+  nvs_handle_t check_handle;
+  esp_err_t result = nvs_open(collection_name, NVS_READONLY, &check_handle);
+  if (result == ESP_ERR_NVS_NOT_FOUND) return EnumerateResult::kOk;
+  if (result != ESP_OK) return EnumerateResult::kError;
+  nvs_close(check_handle);
+
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+  nvs_iterator_t iterator = nullptr;
+  result = nvs_entry_find("nvs", collection_name, NVS_TYPE_ANY, &iterator);
+  if (result == ESP_ERR_NVS_NOT_FOUND) return EnumerateResult::kOk;
+  if (result != ESP_OK) return EnumerateResult::kError;
+
+  while (result == ESP_OK) {
+    nvs_entry_info_t info;
+    if (nvs_entry_info(iterator, &info) != ESP_OK) {
+      nvs_release_iterator(iterator);
+      return EnumerateResult::kError;
+    }
+    if (!visitor(context, roo::string_view(info.key))) {
+      nvs_release_iterator(iterator);
+      return EnumerateResult::kStopped;
+    }
+    result = nvs_entry_next(&iterator);
+  }
+  nvs_release_iterator(iterator);
+  return result == ESP_ERR_NVS_NOT_FOUND ? EnumerateResult::kOk
+                                         : EnumerateResult::kError;
+#else
+  nvs_iterator_t iterator =
+      nvs_entry_find("nvs", collection_name, NVS_TYPE_ANY);
+  while (iterator != nullptr) {
+    nvs_entry_info_t info;
+    nvs_entry_info(iterator, &info);
+    if (!visitor(context, roo::string_view(info.key))) {
+      nvs_release_iterator(iterator);
+      return EnumerateResult::kStopped;
+    }
+    iterator = nvs_entry_next(iterator);
+  }
+  return EnumerateResult::kOk;
+#endif
+}
+
 bool NvsStore::isKey(const char* key) {
   return open_ && key != nullptr && HasAnyType(handle_, key);
 }

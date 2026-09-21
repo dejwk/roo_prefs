@@ -8,6 +8,8 @@
 
 namespace roo_prefs {
 
+using KeyVisitor = bool (*)(void* context, roo::string_view key);
+
 // Backward-compatible name for code that included this low-level store
 // directly. ESP32 builds use ESP-IDF NVS and do not require Arduino.
 using PreferencesStore = NvsStore;
@@ -106,6 +108,9 @@ class PreferencesStore {
 
   bool begin(const char* collection_name, bool read_only);
   void end();
+
+  EnumerateResult enumerateKeys(const char* collection_name, KeyVisitor visitor,
+                                void* context) const;
 
   WriteResult writeObjectInternal(const char* key, const void* val,
                                   size_t size);

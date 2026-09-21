@@ -1,4 +1,7 @@
+#include <algorithm>
 #include <array>
+#include <string>
+#include <vector>
 
 #include "gtest/gtest.h"
 #include "roo_prefs.h"
@@ -349,6 +352,65 @@ TEST(PrefsTest, DirectAccess) {
   }
   EXPECT_FALSE(col.inTransaction());
 }
+
+#if ROO_PREFS_USE_ESP32_NVS
+
+TEST(PrefsTest, EnumeratesPersistedKeys) {
+  Collection col("enum_keys");
+  Int32 first(col, "first");
+  String second(col, "second");
+  Bool removed(col, "removed");
+
+  ASSERT_TRUE(first.set(42));
+  ASSERT_TRUE(second.set("value"));
+  ASSERT_TRUE(removed.set(true));
+  ASSERT_TRUE(removed.clear());
+
+  std::vector<std::string> keys;
+  EXPECT_EQ(EnumerateResult::kOk, col.forEachKey([&keys](roo::string_view key) {
+    keys.emplace_back(key.data(), key.size());
+    return true;
+  }));
+  std::sort(keys.begin(), keys.end());
+  EXPECT_EQ((std::vector<std::string>{"first", "second"}), keys);
+}
+
+TEST(PrefsTest, EnumeratingMissingCollectionSucceedsAndVisitsNothing) {
+  Collection col("enum_missing");
+  int visits = 0;
+
+  EXPECT_EQ(EnumerateResult::kOk, col.forEachKey([&visits](roo::string_view) {
+    ++visits;
+    return true;
+  }));
+  EXPECT_EQ(0, visits);
+}
+
+TEST(PrefsTest, KeyEnumerationCanStopEarly) {
+  Collection col("enum_stop");
+  Int32 first(col, "first");
+  Int32 second(col, "second");
+  ASSERT_TRUE(first.set(1));
+  ASSERT_TRUE(second.set(2));
+
+  int visits = 0;
+  EXPECT_EQ(EnumerateResult::kStopped,
+            col.forEachKey([&visits](roo::string_view) {
+              ++visits;
+              return false;
+            }));
+  EXPECT_EQ(1, visits);
+}
+
+#else
+
+TEST(PrefsTest, KeyEnumerationReportsUnsupportedBackend) {
+  Collection col("enum_keys");
+  EXPECT_EQ(EnumerateResult::kUnsupported,
+            col.forEachKey([](roo::string_view) { return true; }));
+}
+
+#endif
 
 TEST(PrefsTest, EmptyByteArrayIsUnsupported) {
   Collection col("foo");

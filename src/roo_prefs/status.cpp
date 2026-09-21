@@ -36,6 +36,20 @@ const char* ClearResultToString(ClearResult result) {
   return "ClearResult::kUnknown";
 }
 
+const char* EnumerateResultToString(EnumerateResult result) {
+  switch (result) {
+    case EnumerateResult::kOk:
+      return "EnumerateResult::kOk";
+    case EnumerateResult::kStopped:
+      return "EnumerateResult::kStopped";
+    case EnumerateResult::kUnsupported:
+      return "EnumerateResult::kUnsupported";
+    case EnumerateResult::kError:
+      return "EnumerateResult::kError";
+  }
+  return "EnumerateResult::kUnknown";
+}
+
 roo_logging::Stream& operator<<(roo_logging::Stream& os, ReadResult result) {
   return os << ReadResultToString(result);
 }
@@ -46,6 +60,11 @@ roo_logging::Stream& operator<<(roo_logging::Stream& os, WriteResult result) {
 
 roo_logging::Stream& operator<<(roo_logging::Stream& os, ClearResult result) {
   return os << ClearResultToString(result);
+}
+
+roo_logging::Stream& operator<<(roo_logging::Stream& os,
+                                EnumerateResult result) {
+  return os << EnumerateResultToString(result);
 }
 
 }  // namespace roo_prefs

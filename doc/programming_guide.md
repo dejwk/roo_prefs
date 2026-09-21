@@ -91,6 +91,30 @@ On ESP32, the underlying NVS implementation keeps names short. In practice,
 keep collection names and keys compact, ASCII-only, and no more than 15
 characters.
 
+### Enumerating stored keys
+
+Use `Collection::forEachKey()` to inspect the keys that are currently stored
+in a collection:
+
+```cpp
+roo_prefs::EnumerateResult result = prefs.forEachKey(
+    [](roo::string_view key) {
+      Serial.println(key.data());
+      return true;
+    });
+```
+
+The visitor can return `false` to stop early. In that case, the method returns
+`EnumerateResult::kStopped`; a complete traversal returns
+`EnumerateResult::kOk`. A collection that has not been created yet is treated
+as empty and also returns `kOk`.
+
+Enumeration order is unspecified. The key view is valid only until the visitor
+returns, and the collection must not be modified while it is being enumerated.
+The ESP32 NVS backend supports enumeration. Other `Preferences`-compatible
+backends return `EnumerateResult::kUnsupported` when their underlying storage
+API does not provide enumeration.
+
 ## Typed preferences
 
 ### Common aliases

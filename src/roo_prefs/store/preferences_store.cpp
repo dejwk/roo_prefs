@@ -34,6 +34,15 @@ bool PreferencesStore::begin(const char* collection_name, bool read_only) {
 
 void PreferencesStore::end() { prefs_.end(); }
 
+EnumerateResult PreferencesStore::enumerateKeys(const char* collection_name,
+                                                KeyVisitor visitor,
+                                                void* context) const {
+  (void)collection_name;
+  (void)visitor;
+  (void)context;
+  return EnumerateResult::kUnsupported;
+}
+
 bool PreferencesStore::isKey(const char* key) { return prefs_.isKey(key); }
 
 ClearResult PreferencesStore::clear(const char* key) {

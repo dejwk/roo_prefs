@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <type_traits>
+
 #include "roo_logging.h"
 #include "roo_prefs/store/preferences_store.h"
 
@@ -17,6 +20,22 @@ class Collection {
       : store_(), name_(name), refcount_(0), read_only_(true) {}
 
   bool inTransaction() const { return refcount_ > 0; }
+
+  /// Calls `visitor` once for every persisted key in this collection.
+  ///
+  /// The order is unspecified. The key view is valid only for the duration of
+  /// the call to `visitor`. Return false from the visitor to stop early. Do not
+  /// modify this collection while it is being enumerated.
+  template <typename Visitor>
+  EnumerateResult forEachKey(Visitor&& visitor) const {
+    using VisitorType = typename std::remove_reference<Visitor>::type;
+    return store_.enumerateKeys(
+        name_,
+        [](void* context, roo::string_view key) {
+          return static_cast<bool>((*static_cast<VisitorType*>(context))(key));
+        },
+        const_cast<void*>(static_cast<const void*>(std::addressof(visitor))));
+  }
 
  private:
   friend class Transaction;
