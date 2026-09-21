@@ -1,11 +1,13 @@
 module(name = "roo_prefs", version = "1.4.0")
 
 bazel_dep(name = "rules_cc", version = "0.2.25")
-bazel_dep(name = "roo_testing", version = "2.1.3")
+bazel_dep(name = "roo_testing", version = "2.2.0")
 
 bazel_dep(name = "roo_backport", version = "1.2.4")
-bazel_dep(name = "roo_io", version = "2.3.0")
 bazel_dep(name = "roo_logging", version = "1.5.10")
 
 # Optional, for lazy-write prefs.
-bazel_dep(name = "roo_scheduler", version = "2.2.0")
+bazel_dep(name = "roo_scheduler", version = "2.2.0", dev_dependency = True)
+
+# Optional, for persisting in a filesystem (e.g. LittleFS/flash, or FAT/SD).
+bazel_dep(name = "roo_io", version = "2.3.0", dev_dependency = True)
