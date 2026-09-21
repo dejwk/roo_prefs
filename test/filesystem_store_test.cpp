@@ -2,20 +2,69 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "fakefs_reference.h"
 #include "gtest/gtest.h"
+#include "roo_io/fs/posix/posix_mount.h"
 #include "roo_prefs.h"
 
 namespace roo_prefs {
 namespace {
 
+class TestDirectory {
+ public:
+  TestDirectory() {
+    const char* test_tmpdir = std::getenv("TEST_TMPDIR");
+    root_ = std::string(test_tmpdir == nullptr ? "." : test_tmpdir) +
+            "/roo_prefs_filesystem_store";
+    std::error_code error;
+    std::filesystem::remove_all(root_, error);
+    std::filesystem::create_directory(root_);
+  }
+
+  ~TestDirectory() {
+    std::error_code error;
+    std::filesystem::remove_all(root_, error);
+  }
+
+  const std::string& path() const { return root_; }
+
+ private:
+  std::string root_;
+};
+
+class TestFilesystem : public roo_io::Filesystem {
+ public:
+  explicit TestFilesystem(std::string root) : root_(std::move(root)) {}
+
+  MediaPresence checkMediaPresence() override { return kMediaPresent; }
+
+ protected:
+  roo_io::MountImpl::MountResult mountImpl(
+      std::function<void()> unmount_fn) override {
+    bool read_only = mountingPolicy() == kMountReadOnly;
+    return roo_io::MountImpl::Mounted(
+        std::unique_ptr<roo_io::MountImpl>(new roo_io::PosixMountImpl(
+            root_.c_str(), read_only, std::move(unmount_fn))));
+  }
+
+  void unmountImpl() override {}
+
+ private:
+  std::string root_;
+};
+
 class FilesystemStoreTest : public testing::Test {
  protected:
-  roo_io::fakefs::FakeFs data_;
-  roo_io::fakefs::FakeReferenceFs filesystem_{data_};
+  TestDirectory data_;
+  TestFilesystem filesystem_{data_.path()};
   FilesystemStore store_{filesystem_};
 };
 
@@ -125,11 +174,11 @@ TEST_F(FilesystemStoreTest, ReportsWrongTypeAndCorruption) {
               transaction.store().readI32("value", value));
   }
 
-  roo_io::fakefs::FileStream file = data_.open("/prefs/7479706564/k76616c7565",
-                                               roo_io::fakefs::FakeFs::kWrite);
-  const roo_io::byte corrupt = static_cast<roo_io::byte>(0);
-  file.seek(0);
-  ASSERT_EQ(1u, file.write(&corrupt, 1));
+  std::fstream file(data_.path() + "/prefs/7479706564/k76616c7565",
+                    std::ios::binary | std::ios::in | std::ios::out);
+  ASSERT_TRUE(file.is_open());
+  file.seekp(0);
+  file.put('\0');
   file.close();
 
   Transaction transaction(collection, Transaction::Mode::kReadOnly);

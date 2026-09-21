@@ -51,12 +51,8 @@ cc_test(
     name = "filesystem_store_test",
     size = "small",
     srcs = ["test/filesystem_store_test.cpp"],
-    target_compatible_with = [
-        "@roo_testing//roo_testing/platforms:arduino",
-    ],
     deps = [
         ":filesystem_store",
-        "@roo_io//test/fs:fakefs",
     ] + select({
         "@roo_testing//roo_testing/platforms:is_idf": ["@roo_testing//:esp_idf_gtest_main"],
         "//conditions:default": ["@roo_testing//:arduino_gtest_main"],
