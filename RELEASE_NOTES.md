@@ -1,3 +1,11 @@
+# roo_prefs 2.0.0
+
+- Added preference-key enumeration and injectable storage backends.
+- Added an optional filesystem-backed preference store for LittleFS, flash, FAT/SD, and POSIX filesystems, with documentation and tests.
+- Updated optional dependency packaging, including `roo_testing` 2.2.0 and `roo_io` 2.3.1.
+
+---
+
 # roo_prefs 1.4.0
 
 - Added native ESP-IDF support with a direct NVS backend; Arduino is no longer required on ESP32.
