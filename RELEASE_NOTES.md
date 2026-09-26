@@ -1,3 +1,11 @@
+# roo_prefs 2.0.2
+
+- Update `roo_logging` to 1.5.11, `roo_scheduler` to 2.2.1, and `roo_testing` to 2.3.0.
+- Declare `roo_scheduler` as a dependency for Arduino and PlatformIO installations.
+- Improve Bazel tooling with automatic ESP-IDF profile selection for example runs and a helper to test both Arduino and ESP-IDF profiles.
+
+---
+
 # roo_prefs 2.0.1
 
 - Made `roo_scheduler` optional for core `roo_prefs` consumers.

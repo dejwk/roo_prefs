@@ -1,14 +1,14 @@
-module(name = "roo_prefs", version = "2.0.1")
+module(name = "roo_prefs", version = "2.0.2")
 
 bazel_dep(name = "rules_cc", version = "0.2.25")
-bazel_dep(name = "roo_testing", version = "2.2.0")
+bazel_dep(name = "roo_testing", version = "2.3.0")
 
 bazel_dep(name = "roo_backport", version = "1.2.4")
-bazel_dep(name = "roo_logging", version = "1.5.10")
+bazel_dep(name = "roo_logging", version = "1.5.11")
 
 # Used only by the lazy-write API tests. Consumers of the optional
 # `:lazy_write_pref` target supply their own scheduler dependency.
-bazel_dep(name = "roo_scheduler", version = "2.2.0", dev_dependency = True)
+bazel_dep(name = "roo_scheduler", version = "2.2.1", dev_dependency = True)
 
 # Optional, for persisting in a filesystem (e.g. LittleFS/flash, or FAT/SD).
 bazel_dep(name = "roo_io", version = "2.3.1", dev_dependency = True)
