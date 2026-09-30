@@ -1,3 +1,10 @@
+# roo_prefs 2.0.3
+
+- Update `LazyWritePref` to accept `roo_scheduler::SchedulerClient&` instead of `Scheduler&`, adapting to the new scheduler API. Update the programming guide and tests to use `SchedulingService`.
+- Upgrade Bazel dependencies to `roo_scheduler` 2.3.0 and `roo_io` 2.4.0.
+
+---
+
 # roo_prefs 2.0.2
 
 - Update `roo_logging` to 1.5.11, `roo_scheduler` to 2.2.1, and `roo_testing` to 2.3.0.
