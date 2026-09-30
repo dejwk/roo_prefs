@@ -372,14 +372,14 @@ as slider positions, counters, or live tuning values, use `LazyWritePref<T>`.
 
 `LazyWritePref<T>` behaves like `Pref<T>` from the caller's point of view, but
 `set()` only updates a pending value in RAM. The value is written to persistent
-storage later, through a `roo_scheduler::Scheduler` task.
+storage later, through a `roo_scheduler::SchedulingService` task.
 
 Include the lazy-write header explicitly:
 
 ```cpp
 #include "roo_prefs/lazy_write_pref.h"
 
-roo_scheduler::Scheduler scheduler;
+roo_scheduler::SchedulingService scheduler;
 
 roo_prefs::Collection prefs("main");
 roo_prefs::LazyUint32 brightness(

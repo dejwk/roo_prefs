@@ -1,7 +1,7 @@
+#include "roo_prefs/lazy_write_pref.h"
+
 #include <cstring>
 #include <new>
-
-#include "roo_prefs/lazy_write_pref.h"
 
 #include "gtest/gtest.h"
 #include "roo_testing/system/timer.h"
@@ -9,7 +9,7 @@
 namespace roo_prefs {
 TEST(LazyWritePrefTest, BasicOperations) {
   Collection col("foo");
-  roo_scheduler::Scheduler scheduler;
+  roo_scheduler::SchedulingService scheduler;
   LazyUint32 lazy(col, scheduler, "u32");
 
   // To test write-through.
@@ -61,7 +61,7 @@ TEST(LazyWritePrefTest, BasicOperations) {
 
 TEST(LazyWritePrefTest, ClearCancelsPendingWrite) {
   Collection col("lazy_clear");
-  roo_scheduler::Scheduler scheduler;
+  roo_scheduler::SchedulingService scheduler;
   LazyUint32 lazy(col, scheduler, "clear_key");
 
   ASSERT_TRUE(lazy.set(42));
@@ -86,7 +86,7 @@ TEST(LazyWritePrefTest, ClearCancelsPendingWrite) {
 
 TEST(LazyWritePrefTest, ConstructionDoesNotTouchStorage) {
   Collection col("lazy_ctor");
-  roo_scheduler::Scheduler scheduler;
+  roo_scheduler::SchedulingService scheduler;
   LazyUint32 lazy(col, scheduler, "ctor_key");
 
   {
@@ -100,7 +100,7 @@ TEST(LazyWritePrefTest, ConstructionDoesNotTouchStorage) {
 
 TEST(LazyWritePrefTest, FirstSetDoesNotDependOnPoisonedStorage) {
   Collection col("lazy_poison");
-  roo_scheduler::Scheduler scheduler;
+  roo_scheduler::SchedulingService scheduler;
   constexpr uint32_t kPoisonValue = 0xA5A5A5A5u;
 
   alignas(LazyUint32) unsigned char storage[sizeof(LazyUint32)];

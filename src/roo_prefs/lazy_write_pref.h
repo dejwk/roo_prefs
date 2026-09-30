@@ -23,9 +23,9 @@ class LazyWritePref {
   /// using `scheduler`, after it has been stable for at least
   /// `stable_write_latency` seconds, but no later than
   /// `unstable_write_latency_s` after the last write.
-  LazyWritePref(Collection& collection, roo_scheduler::Scheduler& scheduler,
-                const char* key, T default_value = T(),
-                uint8_t stable_write_latency_s = 2,
+  LazyWritePref(Collection& collection,
+                roo_scheduler::SchedulerClient& scheduler, const char* key,
+                T default_value = T(), uint8_t stable_write_latency_s = 2,
                 uint8_t unstable_write_latency_s = 10);
 
   bool isSet() const;
@@ -68,7 +68,7 @@ using LazyArduinoString = LazyWritePref<::String>;
 
 template <typename T>
 LazyWritePref<T>::LazyWritePref(Collection& collection,
-                                roo_scheduler::Scheduler& scheduler,
+                                roo_scheduler::SchedulerClient& scheduler,
                                 const char* key, T default_value,
                                 uint8_t stable_write_latency_s,
                                 uint8_t unstable_write_latency_s)
