@@ -6,10 +6,24 @@ namespace roo_prefs {
 
 namespace {
 
+// LittleFS Preferences stores raw bytes and reports PT_INVALID for every
+// key. Its byte-oriented reads can use the same path as typed blobs.
+PreferenceType StoredValueType(Preferences& prefs, const char* key) {
+#if defined(NVS_USE_LITTLEFS)
+  return prefs.isKey(key) ? PT_BLOB : PT_INVALID;
+#else
+  return prefs.getType(key);
+#endif
+}
+
 bool IsStoredEmptyString(Preferences& prefs, const char* key) {
+#if defined(NVS_USE_LITTLEFS)
+  return prefs.isKey(key) && prefs.getBytesLength(key) == 0;
+#else
   if (prefs.getType(key) != PT_STR) return false;
   char buf[1];
   return prefs.getString(key, buf, sizeof(buf)) == 1 && buf[0] == '\0';
+#endif
 }
 
 ReadResult ReadStoredString(Preferences& prefs, const char* key,
@@ -25,6 +39,18 @@ ReadResult ReadStoredString(Preferences& prefs, const char* key,
   }
   return ReadResult::kError;
 }
+
+#if defined(NVS_USE_LITTLEFS)
+// Checks the stored width before publishing a scalar. Legacy values carry
+// no type information, so the caller supplies their interpretation.
+template <typename T>
+ReadResult ReadUntypedScalar(PreferencesStore& store, const char* key, T& val) {
+  T result;
+  ReadResult status = store.readObject(key, result);
+  if (status == ReadResult::kOk) val = result;
+  return status;
+}
+#endif
 
 }  // namespace
 
@@ -53,7 +79,8 @@ ClearResult PreferencesStore::clear(const char* key) {
 
 WriteResult PreferencesStore::writeBytes(const char* key, const void* val,
                                          size_t len) {
-  return (prefs_.putBytes(key, val, len) > 0) ? WriteResult::kOk
+  if (len == 0) return WriteResult::kError;
+  return (prefs_.putBytes(key, val, len) == len) ? WriteResult::kOk
                                               : WriteResult::kError;
 }
 
@@ -126,14 +153,12 @@ WriteResult PreferencesStore::writeString(const char* key,
     return IsStoredEmptyString(prefs_, key) ? WriteResult::kOk
                                             : WriteResult::kError;
   }
-  return (prefs_.putBytes(key, val.data(), val.size()) > 0)
-             ? WriteResult::kOk
-             : WriteResult::kError;
+  return writeBytes(key, val.data(), val.size());
 }
 
 ReadResult PreferencesStore::readObjectInternal(const char* key, void* val,
                                                 size_t size) {
-  PreferenceType type = prefs_.getType(key);
+  PreferenceType type = StoredValueType(prefs_, key);
   if (type == PT_INVALID) return ReadResult::kNotFound;
   if (type != PT_BLOB) return ReadResult::kWrongType;
   if (prefs_.getBytesLength(key) != size) {
@@ -145,6 +170,57 @@ ReadResult PreferencesStore::readObjectInternal(const char* key, void* val,
   return ReadResult::kOk;
 }
 
+#if defined(NVS_USE_LITTLEFS)
+ReadResult PreferencesStore::readBool(const char* key, bool& val) {
+  uint8_t result;
+  ReadResult status = readU8(key, result);
+  if (status != ReadResult::kOk) return status;
+  if (result > 1) return ReadResult::kError;
+  val = result == 1;
+  return ReadResult::kOk;
+}
+
+ReadResult PreferencesStore::readU8(const char* key, uint8_t& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readI8(const char* key, int8_t& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readU16(const char* key, uint16_t& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readI16(const char* key, int16_t& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readU32(const char* key, uint32_t& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readI32(const char* key, int32_t& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readU64(const char* key, uint64_t& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readI64(const char* key, int64_t& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readFloat(const char* key, float& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+ReadResult PreferencesStore::readDouble(const char* key, double& val) {
+  return ReadUntypedScalar(*this, key, val);
+}
+
+#else
 ReadResult PreferencesStore::readBool(const char* key, bool& val) {
   PreferenceType type = prefs_.getType(key);
   if (type == PT_INVALID) return ReadResult::kNotFound;
@@ -297,9 +373,10 @@ ReadResult PreferencesStore::readDouble(const char* key, double& val) {
   val = result;
   return ReadResult::kOk;
 }
+#endif
 
 ReadResult PreferencesStore::readString(const char* key, std::string& val) {
-  PreferenceType type = prefs_.getType(key);
+  PreferenceType type = StoredValueType(prefs_, key);
   if (type == PT_INVALID) return ReadResult::kNotFound;
   if (type == PT_STR) return ReadStoredString(prefs_, key, val);
   if (type != PT_BLOB) return ReadResult::kWrongType;
@@ -318,7 +395,7 @@ ReadResult PreferencesStore::readString(const char* key, std::string& val) {
 
 ReadResult PreferencesStore::readBytes(const char* key, void* val,
                                        size_t max_len, size_t* out_len) {
-  PreferenceType type = prefs_.getType(key);
+  PreferenceType type = StoredValueType(prefs_, key);
   if (type == PT_INVALID) return ReadResult::kNotFound;
   if (type != PT_BLOB) return ReadResult::kWrongType;
   size_t size = prefs_.getBytesLength(key);
@@ -332,11 +409,13 @@ ReadResult PreferencesStore::readBytes(const char* key, void* val,
 }
 
 ReadResult PreferencesStore::readBytesLength(const char* key, size_t* out_len) {
-  PreferenceType type = prefs_.getType(key);
+  PreferenceType type = StoredValueType(prefs_, key);
   if (type == PT_INVALID) return ReadResult::kNotFound;
   if (type != PT_BLOB) return ReadResult::kWrongType;
   size_t size = prefs_.getBytesLength(key);
+#if !defined(NVS_USE_LITTLEFS)
   if (size == 0) return ReadResult::kError;
+#endif
   if (out_len != nullptr) *out_len = size;
   return ReadResult::kOk;
 }
