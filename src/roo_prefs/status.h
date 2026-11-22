@@ -1,5 +1,6 @@
 #pragma once
 
+#include "roo_logging.h"
 #include "roo_logging/stream.h"
 
 namespace roo_prefs {

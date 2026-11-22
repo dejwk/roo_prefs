@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 
+#include "roo_io.h"
 #include "roo_io/base/byte.h"
 #include "roo_io/fs/file_update_policy.h"
 

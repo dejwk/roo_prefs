@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "roo_io.h"
 #include "roo_io/fs/posix/posix_mount.h"
 #include "roo_prefs.h"
 

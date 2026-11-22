@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "roo_io.h"
 #include "roo_io/fs/filesystem.h"
 #include "roo_prefs/store/store.h"
 
