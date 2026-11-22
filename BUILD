@@ -33,7 +33,7 @@ cc_library(
     }),
 )
 
-# Optional lazy-write API. Users must also depend directly on roo_scheduler.
+# Optional lazy-write API. Users must depend directly on roo_scheduler >= 2.4.0.
 cc_library(
     name = "lazy_write_pref",
     hdrs = ["src/roo_prefs/lazy_write_pref.h"],

@@ -1,3 +1,13 @@
+# roo_prefs 2.0.4
+
+- Fix `LazyWritePref` so explicitly setting an unset preference to its default persists the value. Writes are due at the earlier of the stability interval or the maximum delay, and failed writes retry after at least one second.
+- Restore reads of legacy LittleFS preferences on Arduino-Pico, including raw values and empty strings after a reset. Use a portable API to clear `ArduinoString` preferences.
+- Fix Arduino dependency discovery and declare `roo_io` in the Arduino and PlatformIO packages. Downstream Bazel users can now depend on `@roo_prefs//:filesystem_store` and get `roo_io` automatically.
+- Update Bazel dependencies to `roo_backport` 1.3.0, `roo_logging` 1.6.1, `roo_io` 2.4.1, and `roo_scheduler` 2.4.0. PlatformIO uses the same minimum versions for its declared dependencies, and `LazyWritePref` adopts the renamed `roo_scheduler::Scheduler&` interface.
+- Update `roo_testing` to 2.7.0 in Bazel and CI. Add ESP32-S3, ESP32-C3, and RP2040 profile definitions to the local Bazel test tooling.
+
+---
+
 # roo_prefs 2.0.3
 
 - Update `LazyWritePref` to accept the restricted `roo_scheduler::Scheduler&` interface, adapting to the new scheduler API. Update the programming guide and tests to use `SchedulingService`.
