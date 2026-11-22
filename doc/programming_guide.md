@@ -109,8 +109,8 @@ as one atomic unit.
 The filesystem adapter is header-only so it remains optional in Arduino and
 PlatformIO packages. Those users must install `roo_io` explicitly and include
 `roo_prefs/store/filesystem_store.h`; the ordinary `roo_prefs.h` header does
-not pull it in. Bazel users should depend on `//:filesystem_store` instead of
-adding `roo_io` to consumers of the core `//:roo_prefs` target.
+not pull it in. With Bazel, `@roo_prefs//:filesystem_store` brings in `roo_io`
+automatically.
 
 ### Collections and keys
 

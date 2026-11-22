@@ -57,10 +57,9 @@ updates use a staging file followed by `roo_io::Mount::rename()`. Power-loss
 atomicity requires a backend with atomic replacement semantics, such as
 LittleFS or POSIX on a single filesystem.
 
-The core Arduino and PlatformIO packages deliberately do not declare `roo_io`
-as a dependency. Install/add `roo_io` explicitly when using this backend. With
-Bazel, depend on `//:filesystem_store`; the ordinary `//:roo_prefs` target does
-not link `roo_io`.
+Install `roo_io` explicitly when using this backend with Arduino or PlatformIO.
+With Bazel, depend on `@roo_prefs//:filesystem_store`, which brings in `roo_io`
+automatically.
 
 ## Host emulation
 

@@ -10,5 +10,5 @@ bazel_dep(name = "roo_logging", version = "1.5.11")
 # `:lazy_write_pref` target supply their own scheduler dependency.
 bazel_dep(name = "roo_scheduler", version = "2.3.0", dev_dependency = True)
 
-# Optional, for persisting in a filesystem (e.g. LittleFS/flash, or FAT/SD).
-bazel_dep(name = "roo_io", version = "2.4.0", dev_dependency = True)
+# Used by :filesystem_store, including when roo_prefs is a dependency.
+bazel_dep(name = "roo_io", version = "2.4.0")
