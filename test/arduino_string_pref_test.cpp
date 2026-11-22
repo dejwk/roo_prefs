@@ -54,6 +54,17 @@ TEST(PrefsTest, ArduinoStringMixedSetTypes) {
   EXPECT_STREQ("View string", pref_view_reader.get().c_str());
 }
 
+// Verifies that assigning an empty view clears a populated Arduino string.
+TEST(PrefsTest, ArduinoStringHolderClearsOnEmptyView) {
+  internal::ValueHolder<::String> holder{::String(test_string)};
+  ASSERT_GT(holder.get().length(), 0u);
+
+  holder.set(roo::string_view{});
+
+  EXPECT_EQ(0u, holder.get().length());
+  EXPECT_STREQ("", holder.get().c_str());
+}
+
 TEST(PrefsTest, StringFromArduinoString) {
   Collection col("foo");
 

@@ -135,7 +135,7 @@ class ValueHolder<::String> {
 
   void set(roo::string_view value) {
     if (value.empty()) {
-      value_.clear();
+      value_.remove(0);
       return;
     }
     value_ = ::String(value.data(), value.size());
