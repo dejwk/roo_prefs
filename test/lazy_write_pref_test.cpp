@@ -59,6 +59,94 @@ TEST(LazyWritePrefTest, BasicOperations) {
   }
 }
 
+/// Verifies that explicitly setting the default persists an unset key.
+TEST(LazyWritePrefTest, PersistsExplicitDefault) {
+  Collection col("lazy_default");
+  roo_scheduler::SchedulingService scheduler;
+  constexpr uint32_t kDefault = 42;
+  LazyUint32 lazy(col, scheduler, "value", kDefault);
+
+  EXPECT_FALSE(lazy.isSet());
+  ASSERT_TRUE(lazy.set(kDefault));
+  EXPECT_TRUE(lazy.isSet());
+  EXPECT_FALSE(Uint32(col, "value").isSet());
+
+  roo_time::Delay(roo_time::Seconds(2));
+  scheduler.executeEligibleTasks();
+
+  Uint32 saved(col, "value");
+  EXPECT_TRUE(saved.isSet());
+  EXPECT_EQ(kDefault, saved.get());
+}
+
+/// Verifies that a change restarts the stable interval from the change time.
+TEST(LazyWritePrefTest, FlushesAtStableDeadlineAfterChange) {
+  Collection col("lazy_stable");
+  roo_scheduler::SchedulingService scheduler;
+  LazyUint32 lazy(col, scheduler, "value", 0, 3, 10);
+
+  ASSERT_TRUE(lazy.set(1));
+  roo_time::Delay(roo_time::Millis(2500));
+  ASSERT_TRUE(lazy.set(2));
+  roo_time::Delay(roo_time::Millis(500));
+  scheduler.executeEligibleTasks();
+
+  roo_time::Delay(roo_time::Millis(2499));
+  scheduler.executeEligibleTasks();
+  EXPECT_FALSE(Uint32(col, "value").isSet());
+
+  roo_time::Delay(roo_time::Millis(1));
+  scheduler.executeEligibleTasks();
+  EXPECT_EQ(2u, Uint32(col, "value").get());
+}
+
+/// Verifies the maximum delay when changes keep restarting the stable interval.
+TEST(LazyWritePrefTest, FlushesAtMaximumDeadlineWhileChanging) {
+  Collection col("lazy_maximum");
+  roo_scheduler::SchedulingService scheduler;
+  LazyUint32 lazy(col, scheduler, "value", 0, 3, 5);
+
+  ASSERT_TRUE(lazy.set(1));
+  roo_time::Delay(roo_time::Millis(2500));
+  ASSERT_TRUE(lazy.set(2));
+  roo_time::Delay(roo_time::Millis(500));
+  scheduler.executeEligibleTasks();
+  roo_time::Delay(roo_time::Millis(1500));
+  ASSERT_TRUE(lazy.set(3));
+
+  roo_time::Delay(roo_time::Millis(499));
+  scheduler.executeEligibleTasks();
+  EXPECT_FALSE(Uint32(col, "value").isSet());
+
+  roo_time::Delay(roo_time::Millis(1));
+  scheduler.executeEligibleTasks();
+  EXPECT_EQ(3u, Uint32(col, "value").get());
+}
+
+/// Verifies that zero-delay writes retry later after a storage failure.
+TEST(LazyWritePrefTest, RetriesFailedImmediateWrite) {
+  Collection col("lazy_retry");
+  roo_scheduler::SchedulingService scheduler;
+  LazyUint32 lazy(col, scheduler, "value", 0, 0);
+
+  ASSERT_TRUE(Uint32(col, "value").set(1));
+  {
+    Transaction read_only(col, Transaction::Mode::kReadOnly);
+    ASSERT_TRUE(read_only.active());
+    ASSERT_TRUE(lazy.set(2));
+    scheduler.executeEligibleTasks(1);
+    EXPECT_EQ(2u, lazy.get());
+    EXPECT_EQ(1u, Uint32(col, "value").get());
+  }
+
+  scheduler.executeEligibleTasks(1);
+  EXPECT_EQ(1u, Uint32(col, "value").get());
+
+  roo_time::Delay(roo_time::Seconds(1));
+  scheduler.executeEligibleTasks();
+  EXPECT_EQ(2u, Uint32(col, "value").get());
+}
+
 TEST(LazyWritePrefTest, ClearCancelsPendingWrite) {
   Collection col("lazy_clear");
   roo_scheduler::SchedulingService scheduler;

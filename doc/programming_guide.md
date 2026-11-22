@@ -399,10 +399,13 @@ void loop() {
 }
 ```
 
-If the value stops changing, it is flushed after the stable latency. If the
-value keeps changing, it is flushed no later than the unstable latency.
-`get()` returns the pending value while a write is waiting, so the rest of the
-program sees the latest value immediately.
+A flush is due when either the stable interval since the latest change or the
+maximum delay since the first pending change elapses. The scheduler must run
+the task to attempt the write. Failed writes are retried after the stable
+interval, with a minimum retry delay of one second.
+
+`get()` returns the pending value while a write is waiting. Explicitly setting
+an unset preference to its default value schedules a write for that value.
 
 Use plain `Pref<T>` for values that must be persisted immediately before the
 program continues, such as credentials accepted from a setup portal. A lazy
